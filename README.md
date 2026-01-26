@@ -418,15 +418,25 @@ _See `METRICS.md` for full definitions._
 
 ## 🔮 About GrowthCues
 
-This repository handles the **Descriptive Layer** of your stack (answering "what happened?").
+This repository handles the Descriptive Layer of your GTM stack (answering "what happened?") and is 100% open source. It contains the foundational metrics every B2B SaaS company needs.
 
-[GrowthCues](https://growthcues.com) is a Commercial platform designed to handle the **Predictive Layer** (answering "what will happen next?"). It runs on top of the same warehouse-native architecture but adds:
+Do you want to go further and to track user or customer journeys, or predict account behavior for sales/CS teams?
 
-- **Predictive Scoring:** AI-generated "Likelihood to Convert" and "Likelihood to Churn" scores.
-- **No-Code Journey Modeling:** Define complex milestones (e.g., "Onboarding Complete") without writing SQL.
-- **Reverse ETL Ready:** Sync signals directly to Salesforce, HubSpot, or Slack.
+GrowthCues is a headless semantic layer that runs on top of the same warehouse-native architecture but adds:
 
-If you need to go beyond standard metrics and start predicting user behavior, check out **[growthcues.com](https://growthcues.com)**.
+- Advanced Trends: Detects true trajectory using linear regression and complex windowing (vs. simplified linear velocity in this repo).
+
+- Compute Savings: Calculations run on the GrowthCues engine, eliminating the daily compute costs on your Snowflake/BigQuery warehouse.
+
+- Predictive Scoring: AI-generated "Likelihood to Convert" and "Likelihood to Churn" scores.
+
+- No-Code Journey Modeling: Define complex milestones (e.g., "Onboarding Complete") and journey completion scores without writing SQL.
+
+- Reverse ETL Ready: Sync signals directly to Salesforce, HubSpot, or Slack.
+
+- AI Ready: Auto-generated dbt schema optimized for LLMs to prevent hallucinations.
+
+If you need to go beyond standard metrics and start predicting user behavior, check out [growthcues.com](https://growthcues.com).
 
 ## License
 
