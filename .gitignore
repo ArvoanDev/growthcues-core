@@ -1,0 +1,12 @@
+target/
+dbt_packages/
+logs/
+.DS_Store
+profiles.yml
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.vscode/
+.env
+.env.*

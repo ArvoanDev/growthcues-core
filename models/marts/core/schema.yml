@@ -1,0 +1,420 @@
+version: 2
+
+models:
+  - name: fct_product_metrics_daily
+    description: >
+      [Definition] The product-level fact table aggregating activity across ALL accounts.
+      [Context] Use this table for high-level reporting (e.g., Investor Updates, Board Slides).
+      It removes double-counting of users who belong to multiple accounts.
+    columns:
+      - name: metric_date
+        tests: [not_null, unique]
+        description: >
+          [Definition] The calendar date for the row.
+          [Formula] Derived from the Date Spine.
+          [Context] All metrics reflect activity on or leading up to this date.
+
+      # --- USER METRICS ---
+      - name: dau
+        description: >
+          [Definition] Global Daily Active Users. Unique humans active today.
+          [Formula] COUNT(DISTINCT user_id) where event_date = metric_date.
+          [Context] The baseline pulse of your product's daily usage.
+      - name: wau
+        description: >
+          [Definition] Global Weekly Active Users. Unique humans active in last 7 days.
+          [Formula] COUNT(DISTINCT user_id) where event_date > (metric_date - 7 days).
+          [Context] Useful for products with a weekly usage cadence.
+      - name: mau
+        description: >
+          [Definition] Global Monthly Active Users. Unique humans active in last 30 days.
+          [Formula] COUNT(DISTINCT user_id) where event_date > (metric_date - 30 days).
+          [Context] The standard measure of total user base size.
+
+      # --- ACCOUNT METRICS ---
+      - name: daa
+        description: >
+          [Definition] Global Daily Active Accounts. Unique companies active today.
+          [Formula] COUNT(DISTINCT account_id) where event_date = metric_date.
+          [Context] Tracks daily logo engagement. Critical for B2B.
+      - name: waa
+        description: >
+          [Definition] Global Weekly Active Accounts. Unique companies active in last 7 days.
+          [Formula] COUNT(DISTINCT account_id) where event_date > (metric_date - 7 days).
+          [Context] Smooths out daily volatility (like weekends) for account activity.
+      - name: maa
+        description: >
+          [Definition] Global Monthly Active Accounts. Unique companies active in last 30 days.
+          [Formula] COUNT(DISTINCT account_id) where event_date > (metric_date - 30 days).
+          [Context] The best proxy for "Total Active Customer Base" or "Retained Logos".
+
+      # --- RATIOS ---
+      - name: user_stickiness_ratio
+        description: >
+          [Definition] Global User Habit Score.
+          [Formula] DAU / MAU.
+          [Context] Measures how habit-forming the product is. >20% is good for B2B.
+      - name: account_stickiness_ratio
+        description: >
+          [Definition] Global Account Habit Score.
+          [Formula] DAA / MAA.
+          [Context] Measures how ingrained the product is in your customer base's daily operations.
+
+      # --- USER TRENDS (Velocity) ---
+      - name: dau_trend_7d
+        description: >
+          [Definition] 7-Day Velocity for DAU.
+          [Formula] (Current DAU - DAU 7 Days Ago) / 7.
+          [Context] Represents the average net new daily users gained (or lost) per day over the last week.
+      - name: dau_trend_14d
+        description: >
+          [Definition] 14-Day Velocity for DAU.
+          [Formula] (Current DAU - DAU 14 Days Ago) / 14.
+          [Context] Represents the average net new daily users gained (or lost) per day over the last two weeks.
+      - name: dau_trend_30d
+        description: >
+          [Definition] 30-Day Velocity for DAU.
+          [Formula] (Current DAU - DAU 30 Days Ago) / 30.
+          [Context] Represents the average net new daily users gained (or lost) per day over the last month.
+
+      - name: wau_trend_7d
+        description: >
+          [Definition] 7-Day Velocity for WAU.
+          [Formula] (Current WAU - WAU 7 Days Ago) / 7.
+          [Context] Short-term momentum for weekly active users.
+      - name: wau_trend_14d
+        description: >
+          [Definition] 14-Day Velocity for WAU.
+          [Formula] (Current WAU - WAU 14 Days Ago) / 14.
+          [Context] Medium-term momentum for weekly active users.
+      - name: wau_trend_30d
+        description: >
+          [Definition] 30-Day Velocity for WAU.
+          [Formula] (Current WAU - WAU 30 Days Ago) / 30.
+          [Context] Long-term momentum for weekly active users.
+
+      - name: mau_trend_7d
+        description: >
+          [Definition] 7-Day Velocity for MAU.
+          [Formula] (Current MAU - MAU 7 Days Ago) / 7.
+          [Context] Short-term momentum for monthly active users.
+      - name: mau_trend_14d
+        description: >
+          [Definition] 14-Day Velocity for MAU.
+          [Formula] (Current MAU - MAU 14 Days Ago) / 14.
+          [Context] Medium-term momentum for monthly active users.
+      - name: mau_trend_30d
+        description: >
+          [Definition] 30-Day Velocity for MAU.
+          [Formula] (Current MAU - MAU 30 Days Ago) / 30.
+          [Context] Net new users/day over last month. Positive means the user base is growing.
+
+      # --- ACCOUNT TRENDS (Velocity) ---
+      - name: daa_trend_7d
+        description: >
+          [Definition] 7-Day Velocity for DAA.
+          [Formula] (Current DAA - DAA 7 Days Ago) / 7.
+          [Context] Measures short-term spikes in account activity.
+      - name: daa_trend_14d
+        description: >
+          [Definition] 14-Day Velocity for DAA.
+          [Formula] (Current DAA - DAA 14 Days Ago) / 14.
+          [Context] Measures medium-term trends in account activity.
+      - name: daa_trend_30d
+        description: >
+          [Definition] 30-Day Velocity for DAA.
+          [Formula] (Current DAA - DAA 30 Days Ago) / 30.
+          [Context] Measures long-term trends in account activity.
+
+      - name: waa_trend_7d
+        description: >
+          [Definition] 7-Day Velocity for WAA.
+          [Formula] (Current WAA - WAA 7 Days Ago) / 7.
+          [Context] Short-term momentum for weekly active accounts.
+      - name: waa_trend_14d
+        description: >
+          [Definition] 14-Day Velocity for WAA.
+          [Formula] (Current WAA - WAA 14 Days Ago) / 14.
+          [Context] Medium-term momentum for weekly active accounts.
+      - name: waa_trend_30d
+        description: >
+          [Definition] 30-Day Velocity for WAA.
+          [Formula] (Current WAA - WAA 30 Days Ago) / 30.
+          [Context] Long-term momentum for weekly active accounts.
+
+      - name: maa_trend_7d
+        description: >
+          [Definition] 7-Day Velocity for MAA.
+          [Formula] (Current MAA - MAA 7 Days Ago) / 7.
+          [Context] Short-term momentum for total customer base.
+      - name: maa_trend_14d
+        description: >
+          [Definition] 14-Day Velocity for MAA.
+          [Formula] (Current MAA - MAA 14 Days Ago) / 14.
+          [Context] Medium-term momentum for total customer base.
+      - name: maa_trend_30d
+        description: >
+          [Definition] 30-Day Velocity for MAA.
+          [Formula] (Current MAA - MAA 30 Days Ago) / 30.
+          [Context] Net new accounts/day over last month. Positive means the customer base is growing.
+
+  - name: fct_account_metrics_daily
+    description: >
+      [Definition] The central fact table containing daily account-level product usage metrics.
+      Each row represents a single Account (Company) on a single Date.
+      [Context] Use this table to analyze trends over time, such as daily active usage,
+      account stickiness, and dormancy risks. This is the primary source for PLG signals.
+    columns:
+      - name: metric_date
+        description: >
+          [Definition] The calendar date for the metrics.
+          [Formula] Derived from Date Spine.
+          [Context] Indicates the date of observation.
+        tests: [not_null]
+
+      - name: account_id
+        description: >
+          [Definition] The unique identifier for the Account (Group).
+          [Formula] From source `context_group_id`.
+          [Context] Identifies the specific customer or company.
+        tests: [not_null]
+
+      # --- CORE METRICS ---
+      - name: dau
+        description: >
+          [Definition] Daily Active Users (Account Level).
+          [Formula] COUNT(DISTINCT user_id) within this account on metric_date.
+          [Context] Count of unique users active in this account today.
+
+      - name: wau
+        description: >
+          [Definition] Weekly Active Users (Account Level).
+          [Formula] COUNT(DISTINCT user_id) within this account in last 7 days.
+          [Context] Count of unique users active in this account over the last 7 days.
+
+      - name: mau
+        description: >
+          [Definition] Monthly Active Users (Account Level).
+          [Formula] COUNT(DISTINCT user_id) within this account in last 30 days.
+          [Context] Count of unique users active in this account over the last 30 days.
+
+      # --- FLAGS ---
+      - name: is_active_daily
+        description: >
+          [Definition] Daily Activity Flag.
+          [Formula] 1 if DAU > 0, else 0.
+          [Context] Binary indicator if the account did anything today.
+      - name: is_active_weekly
+        description: >
+          [Definition] Weekly Activity Flag.
+          [Formula] 1 if WAU > 0, else 0.
+          [Context] Binary indicator if the account was active this week.
+      - name: is_active_monthly
+        description: >
+          [Definition] Monthly Activity Flag.
+          [Formula] 1 if MAU > 0, else 0.
+          [Context] Binary indicator if the account is retained (active this month).
+
+      # --- RATIOS ---
+      - name: account_stickiness_ratio
+        description: >
+          [Definition] Account Usage Frequency.
+          [Formula] (Number of Active Days in Last 7 Days) / 7.
+          [Context] 1.0 = Uses product every day. <0.15 = Churn Risk.
+      - name: user_stickiness_ratio
+        description: >
+          [Definition] User Depth.
+          [Formula] Account DAU / Account MAU.
+          [Context] Measures how habit-forming the product is for users within this specific company.
+      - name: is_dormant_risk
+        description: >
+          [Definition] Churn Risk Signal.
+          [Formula] 1 if MAU > 0 AND WAU = 0.
+          [Context] Account was active recently but stopped using the product this week. Immediate attention needed.
+
+      # --- TRENDS ---
+      - name: dau_trend_7d
+        description: >
+          [Definition] 7-Day Velocity for DAU (Account Level).
+          [Formula] (Current DAU - DAU 7 Days Ago) / 7.
+          [Context] Short-term trend in daily active users for this account.
+      - name: dau_trend_14d
+        description: >
+          [Definition] 14-Day Velocity for DAU (Account Level).
+          [Formula] (Current DAU - DAU 14 Days Ago) / 14.
+          [Context] Medium-term trend in daily active users for this account.
+      - name: dau_trend_30d
+        description: >
+          [Definition] 30-Day Velocity for DAU (Account Level).
+          [Formula] (Current DAU - DAU 30 Days Ago) / 30.
+          [Context] Long-term trend in daily active users for this account.
+
+      - name: wau_trend_7d
+        description: >
+          [Definition] 7-Day Velocity for WAU (Account Level).
+          [Formula] (Current WAU - WAU 7 Days Ago) / 7.
+          [Context] Short-term trend in weekly active users for this account.
+      - name: wau_trend_14d
+        description: >
+          [Definition] 14-Day Velocity for WAU (Account Level).
+          [Formula] (Current WAU - WAU 14 Days Ago) / 14.
+          [Context] Medium-term trend in weekly active users for this account.
+      - name: wau_trend_30d
+        description: >
+          [Definition] 30-Day Velocity for WAU (Account Level).
+          [Formula] (Current WAU - WAU 30 Days Ago) / 30.
+          [Context] Long-term trend in weekly active users for this account.
+
+      - name: mau_trend_7d
+        description: >
+          [Definition] 7-Day Velocity for MAU (Account Level).
+          [Formula] (Current MAU - MAU 7 Days Ago) / 7.
+          [Context] Short-term trend in monthly active users for this account.
+      - name: mau_trend_14d
+        description: >
+          [Definition] 14-Day Velocity for MAU (Account Level).
+          [Formula] (Current MAU - MAU 14 Days Ago) / 14.
+          [Context] Medium-term trend in monthly active users for this account.
+      - name: mau_trend_30d
+        description: >
+          [Definition] 30-Day Velocity for MAU (Account Level).
+          [Formula] (Current MAU - MAU 30 Days Ago) / 30.
+          [Context] Net new active users gained/lost per day in this account over the last month.
+
+  - name: fct_user_metrics_daily
+    description: >
+      [Definition] A Snapshot table containing the LATEST metrics for every individual user (Human).
+      [Context] Use this table to analyze current user retention status (New vs Resurrected vs Churned).
+      One row per unique User ID (Snapshot).
+    columns:
+      - name: metric_date
+        description: >
+          [Definition] The calendar date of the snapshot.
+          [Formula] The latest date available in the dataset for this user.
+          [Context] Indicates when these metrics were last calculated.
+        tests: [not_null]
+
+      - name: user_id
+        description: >
+          [Definition] Unique User ID.
+          [Formula] From source `user_id`.
+          [Context] The unique identifier for the individual user.
+        tests: [not_null]
+
+      - name: latest_account_id
+        description: >
+          [Definition] The most recent Account ID associated with this user.
+          [Formula] Joined from `dim_users`.
+          [Context] Connects this user to their primary organization.
+
+      - name: n_events_daily
+        description: >
+          [Definition] Number of events performed on the snapshot date.
+          [Formula] Count(*) from tracks.
+          [Context] Usage volume intensity.
+
+      - name: is_active_daily
+        description: >
+          [Definition] Daily Activity Flag.
+          [Formula] 1 if n_events_daily > 0, else 0.
+          [Context] Binary indicator if the user was active on the snapshot date.
+
+      - name: is_active_weekly
+        description: >
+          [Definition] Weekly Activity Flag.
+          [Formula] 1 if user was active in last 7 days from snapshot.
+          [Context] Binary indicator if the user is currently a weekly active user (WAU).
+
+      - name: is_active_monthly
+        description: >
+          [Definition] Monthly Activity Flag.
+          [Formula] 1 if user was active in last 30 days from snapshot.
+          [Context] Binary indicator if the user is currently a monthly active user (MAU).
+
+      - name: active_days_last_7
+        description: >
+          [Definition] Frequency. Days active in last 7.
+          [Formula] SUM(is_active_daily) over 7 day window.
+          [Context] 3+ indicates a "Power User" for most B2B apps.
+
+      - name: user_lifecycle_status
+        description: >
+          [Definition] Current Lifecycle State.
+          [Formula] Logic based on history: New, Active, Dormant, Resurrected, Churned.
+          [Context] Critical for "Growth Accounting" and understanding net user growth.
+
+  - name: dim_accounts
+    description: "[Definition] Master table of all accounts."
+    columns:
+      - name: account_id
+        tests: [unique, not_null]
+        description: >
+          [Definition] Unique Account ID.
+          [Formula] From source `context_group_id`.
+          [Context] Primary Key for the account dimension.
+
+      - name: first_seen_at
+        description: >
+          [Definition] Timestamp of first event.
+          [Formula] MIN(event_at) for this account.
+          [Context] Used to calculate Account Age.
+
+      - name: last_seen_at
+        description: >
+          [Definition] Timestamp of most recent event.
+          [Formula] MAX(event_at) for this account.
+          [Context] Used to determine if an account has churned.
+
+      - name: current_active_seats
+        description: >
+          [Definition] Proxy for active licenses.
+          [Formula] COUNT(DISTINCT user_id) active in last 30 days.
+          [Context] Indicates the number of currently active seats/licenses.
+
+      - name: lifetime_unique_users
+        description: >
+          [Definition] Total distinct users ever seen.
+          [Formula] COUNT(DISTINCT user_id) lifetime.
+          [Context] Indicates total historical reach of the account.
+
+      - name: days_since_first_seen
+        description: >
+          [Definition] Account Age in days.
+          [Formula] DATEDIFF(day, first_seen_at, current_date).
+          [Context] Useful for cohort analysis.
+
+      - name: days_since_last_seen
+        description: >
+          [Definition] Days inactive.
+          [Formula] DATEDIFF(day, last_seen_at, current_date).
+          [Context] >30 days strongly suggests churn.
+
+  - name: dim_users
+    description: "[Definition] Master table of all users."
+    columns:
+      - name: user_id
+        tests: [unique, not_null]
+        description: >
+          [Definition] Unique User ID.
+          [Formula] From source `user_id`.
+          [Context] Primary Key for the user dimension.
+      - name: first_seen_at
+        description: >
+          [Definition] Timestamp of first event.
+          [Formula] MIN(event_at) for this user.
+          [Context] Used to calculate User Age.
+      - name: last_seen_at
+        description: >
+          [Definition] Timestamp of most recent event.
+          [Formula] MAX(event_at) for this user.
+          [Context] Used to determine if a user has churned.
+      - name: lifetime_accounts_distinct
+        description: >
+          [Definition] Number of unique accounts this user has engaged with.
+          [Formula] COUNT(DISTINCT account_id) lifetime.
+          [Context] High numbers may indicate a contractor or admin user.
+      - name: latest_account_id
+        description: >
+          [Definition] The most recent Account ID associated with this user.
+          [Formula] account_id from the most recent track event.
+          [Context] Useful for mapping users to their current primary organization.
