@@ -18,7 +18,11 @@ It produces three critical tables in your warehouse:
 
 2. **`fct_account_metrics_daily`**: The operational view. Granular, account-by-account health metrics including Stickiness, Seat Utilization, and Churn Risk.
 
-3. **`dim_accounts`**: A master record of every company, including "Last Seen" dates and age.
+3. **`fct_user_metrics_daily`**: The behavioral view. Daily snapshots of individual user activity, frequency, and lifecycle status.
+
+4. **`dim_accounts`**: A master record of every company, including "Last Seen" dates and age.
+
+5. **`dim_users`**: A master record of every user, including lifetime stats and their primary account.
 
 ## 🚀 Features
 
@@ -297,10 +301,12 @@ dbt run
 
 **What happens:**
 
-- dbt will create three new tables in your warehouse:
-  - `fct_product_metrics_daily` - Global product metrics (DAU, MAU, etc.)
-  - `fct_account_metrics_daily` - Account-level health metrics
+- dbt will create five new tables/views in your warehouse:
+  - `fct_product_metrics_daily` - Global product metrics (DAU, MAU, DAA, MAA, etc.)
+  - `fct_account_metrics_daily` - Account-level health metrics (stickiness, churn risk, etc.)
+  - `fct_user_metrics_daily` - User-level behavioral metrics and lifecycle status
   - `dim_accounts` - Master account dimension table
+  - `dim_users` - Master user dimension table
 
 **First run will take a few minutes** depending on how much data you have.
 
@@ -413,6 +419,15 @@ _Source: `fct_account_metrics_daily_`
 | **User Stickiness** | Ratio of DAU / MAU _within_ that account. | Measuring user depth. |
 | **Account Breadth** | Active Users within the Account. | Expansion revenue signals (upsell seats). |
 | **Dormant Risk** | Active in last 30 days, but 0 events in last 7 days. | Proactive churn prevention. |
+
+### User Level (Per Person)
+
+Source: `fct_user_metrics_daily`
+| Metric | Definition | PLG Use Case |
+| :--- | :--- | :--- |
+| Usage Frequency | Days active in last 7 days. | Identifying "Power Users" (3+ days/week). |
+| Lifecycle Status | New, Active, Dormant, Resurrected, or Churned. | Growth Accounting and retention analysis. |
+| Latest Account | The primary account ID for this user. | Mapping users to organizations. |
 
 _See `METRICS.md` for full definitions._
 
