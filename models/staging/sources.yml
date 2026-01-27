@@ -3,7 +3,7 @@ version: 2
 sources:
   - name: segment
     # Update this schema to match where your raw data lives (e.g., 'segment_events', 'rudderstack_production')
-    schema: public
+    schema: large_events10
     tables:
       - name: tracks
         description: Raw event stream from Segment/Rudderstack.
