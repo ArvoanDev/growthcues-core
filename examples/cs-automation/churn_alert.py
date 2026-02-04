@@ -32,6 +32,9 @@ query = f"""
     LIMIT 5
 """
 
+print("Running Query to detect churn risks...")
+print(query)
+
 
 def send_slack_alert(accounts):
     if not accounts:
