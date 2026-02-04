@@ -12,7 +12,7 @@ A dbt project to calculate **Account-Level** and **Product-Level** metrics from 
 
 Most analytics tools focus only on Users. B2B businesses need to track **Accounts**. This project handles both.
 
-It produces three critical tables in your warehouse:
+It produces five critical tables in your warehouse:
 
 1. **`fct_product_metrics_daily`**: The executive view. Global DAU/MAU and Account volume (DAA/MAA) across the entire product.
 
@@ -30,7 +30,7 @@ It produces three critical tables in your warehouse:
 
 - **B2B Standard:** Compatible out-of-the-box with Segment and Rudderstack using the **Segment B2B SaaS spec** (requires `context_group_id` in tracks table for account identification).
 
-- **Dual Granularity:** Calculates metrics at both the Global (Product) level and the Account (Customer) level.
+- **B2B SaaS Granularity:** Calculates metrics at the Global (Product), Account (Customer), and User (Person) levels.
 
 - **Zero Hallucinations:** Includes a specialized `schema.yml` designed to ground LLMs (ChatGPT/Claude) in your specific business logic.
 
@@ -40,6 +40,7 @@ It produces three critical tables in your warehouse:
 
 Before you begin, ensure you have:
 
+- dbt Core (v1.0+) or dbt Cloud.
 - **Python 3.10 or higher** installed on your computer
 - Access to a **Snowflake** or **BigQuery** warehouse with appropriate permissions
 - Raw data from **Segment** or **Rudderstack** loaded into your warehouse following the **Segment B2B SaaS spec**:
@@ -437,21 +438,21 @@ This repository handles the Descriptive Layer of your GTM stack (answering "what
 
 Do you want to go further and to track user or customer journeys, or predict account behavior for sales/CS teams?
 
-GrowthCues is a headless semantic layer that runs on top of the same warehouse-native architecture but adds:
+I have built GrowthCues as a headless semantic layer for B2B SaaS that runs on top of the same warehouse-native architecture but adds:
+
+- No-Code Journey Modeling: Define complex milestones (e.g., "Onboarding Complete") and journey completion scores without writing SQL.
+
+- Predictive Scoring: AI-generated "Likelihood to Convert" and "Likelihood to Churn" scores.
 
 - Advanced Trends: Detects true trajectory using linear regression and complex windowing (vs. simplified linear velocity in this repo).
 
 - Compute Savings: Calculations run on the GrowthCues engine, eliminating the daily compute costs on your Snowflake/BigQuery warehouse.
 
-- Predictive Scoring: AI-generated "Likelihood to Convert" and "Likelihood to Churn" scores.
-
-- No-Code Journey Modeling: Define complex milestones (e.g., "Onboarding Complete") and journey completion scores without writing SQL.
-
 - Reverse ETL Ready: Sync signals directly to Salesforce, HubSpot, or Slack.
 
-- AI Ready: Auto-generated dbt schema optimized for LLMs to prevent hallucinations.
+- AI Ready: Auto-generated dbt schema optimized for LLMs to prevent hallucinations. Includes also the metrics for customer journeys and predictions.
 
-If you need to go beyond standard metrics and start predicting user behavior, check out [growthcues.com](https://growthcues.com).
+If you need to go beyond standard metrics and start tracking or predicting customer journeys, check out [growthcues.com](https://growthcues.com).
 
 ## License
 

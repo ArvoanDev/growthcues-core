@@ -1,3 +1,4 @@
+-- models/marts/core/dim_users.sql
 {{ config(
     materialized='table'
 ) }}
@@ -19,8 +20,7 @@ last_account as (
         account_id as latest_account_id
     from {{ ref('stg_segment_tracks') }}
     where user_id is not null and account_id is not null
-    -- Qualify selects the first row of the window function
-    -- Supported in Snowflake and BigQuery
+    -- Qualify selects the first row of the window function (Snowflake/BigQuery supported)
     qualify row_number() over (partition by user_id order by event_at desc) = 1
 )
 
@@ -29,12 +29,9 @@ select
     u.first_seen_at,
     u.last_seen_at,
     u.lifetime_accounts_distinct,
-    
     la.latest_account_id,
-    
     -- Lifetime Duration
     {{ dbt.datediff("u.first_seen_at", "current_timestamp", "day") }} as days_since_first_seen,
     {{ dbt.datediff("u.last_seen_at", "current_timestamp", "day") }} as days_since_last_seen
-
 from user_activity u
 left join last_account la using (user_id)

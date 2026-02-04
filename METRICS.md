@@ -10,38 +10,51 @@ These definitions are compatible with the GrowthCues "AI-Ready" standard, optimi
 
 **Grain:** One row per Date.
 
-| Metric    | Definition                                                                   |
-| :-------- | :--------------------------------------------------------------------------- |
-| **`dau`** | **Global Daily Active Users.** Unique humans active today.                   |
-| **`wau`** | **Global Weekly Active Users.** Unique humans active in last 7 days.         |
-| **`mau`** | **Global Monthly Active Users.** Unique humans active in last 30 days.       |
-| **`daa`** | **Global Daily Active Accounts.** Unique companies active today.             |
-| **`waa`** | **Global Weekly Active Accounts.** Unique companies active in last 7 days.   |
-| **`maa`** | **Global Monthly Active Accounts.** Unique companies active in last 30 days. |
+| Metric              | Definition                                                                   |
+| :------------------ | :--------------------------------------------------------------------------- |
+| **`dau`**           | **Global Daily Active Users.** Unique users active today.                    |
+| **`wau`**           | **Global Weekly Active Users.** Unique users active in last 7 days.          |
+| **`mau`**           | **Global Monthly Active Users.** Unique users active in last 30 days.        |
+| **`daa`**           | **Global Daily Active Accounts.** Unique companies active today.             |
+| **`waa`**           | **Global Weekly Active Accounts.** Unique companies active in last 7 days.   |
+| **`maa`**           | **Global Monthly Active Accounts.** Unique companies active in last 30 days. |
+| **Velocity Trends** | 7, 14, and 30-day linear trends for all metrics above.                       |
 
-_Note: All Global Metrics include 7, 14, and 30-day velocity trends (e.g., `dau_trend_7d`)._
+## 2. Account Health & GTM Signals Metrics (`fct_account_metrics_daily`)
 
-## 2. Account Health Metrics (`fct_account_metrics_daily`)
-
-**Description:** Granular, account-by-account health metrics.
+**Description:** Granular, account-by-account health metrics and sales triggers.
 
 **Grain:** One row per Account per Date.
 
 ### Core Metrics
 
-| Column Name                    | Type    | Definition                                                    | Context                                   |
-| :----------------------------- | :------ | :------------------------------------------------------------ | :---------------------------------------- |
-| **`metric_date`**              | Date    | Calendar date.                                                |                                           |
-| **`account_id`**               | String  | Unique Account ID.                                            |                                           |
-| **`dau`**                      | Integer | **Account DAU.** Active users in this account today.          | Daily seat usage.                         |
-| **`wau`**                      | Integer | **Account WAU.** Active users in this account (Last 7 Days).  | Weekly seat usage.                        |
-| **`mau`**                      | Integer | **Account MAU.** Active users in this account (Last 30 Days). | Monthly seat usage.                       |
-| **`is_active_daily`**          | Flag    | 1 if DAU > 0.                                                 |                                           |
-| **`is_active_weekly`**         | Flag    | 1 if WAU > 0.                                                 |                                           |
-| **`is_active_monthly`**        | Flag    | 1 if MAU > 0.                                                 |                                           |
-| **`account_stickiness_ratio`** | Float   | **Usage Frequency.** (Active Days / 7).                       | 1.0 = Uses product daily.                 |
-| **`user_stickiness_ratio`**    | Float   | **User Depth.** (DAU / MAU).                                  | Measures habit formation within the team. |
-| **`is_dormant_risk`**          | Flag    | **Churn Risk.** (MAU > 0 AND WAU = 0).                        | Account stopped using product this week.  |
+| Column Name       | Type    | Definition                                                    | Context             |
+| :---------------- | :------ | :------------------------------------------------------------ | :------------------ |
+| **`metric_date`** | Date    | Calendar date.                                                |                     |
+| **`account_id`**  | String  | Unique Account ID.                                            |                     |
+| **`dau`**         | Integer | **Account DAU.** Active users in this account today.          | Daily seat usage.   |
+| **`wau`**         | Integer | **Account WAU.** Active users in this account (Last 7 Days).  | Weekly seat usage.  |
+| **`mau`**         | Integer | **Account MAU.** Active users in this account (Last 30 Days). | Monthly seat usage. |
+
+### Volume & Depth Metrics
+
+| Column Name                      | Type    | Definition                                                        | Context                                  |
+| :------------------------------- | :------ | :---------------------------------------------------------------- | :--------------------------------------- |
+| **`n_events_daily`**             | Integer | **Daily Event Volume.** Total events by this account today.       | Higher volume = higher engagement.       |
+| **`distinct_features_used_30d`** | Integer | **Feature Breadth.** Count of unique event types in last 30 days. | More features = deeper product adoption. |
+| **`active_days_7d`**             | Integer | **7-Day Frequency.** Number of days active in last 7 days.        | 5-7 days = highly engaged account.       |
+| **`active_days_30d`**            | Integer | **30-Day Frequency.** Number of days active in last 30 days.      | Used in stickiness ratio calculation.    |
+
+### Flags & Ratios
+
+| Column Name                    | Type  | Definition                                               | Context                                       |
+| :----------------------------- | :---- | :------------------------------------------------------- | :-------------------------------------------- |
+| **`is_active_daily`**          | Flag  | 1 if DAU > 0.                                            |                                               |
+| **`is_active_weekly`**         | Flag  | 1 if WAU > 0.                                            |                                               |
+| **`is_active_monthly`**        | Flag  | 1 if MAU > 0.                                            |                                               |
+| **`account_stickiness_ratio`** | Float | **Usage Frequency.** (active_days_7d / active_days_30d). | 1.0 = Uses product daily. <0.15 = Churn Risk. |
+| **`user_stickiness_ratio`**    | Float | **User Depth.** (DAU / MAU).                             | Measures habit formation within the team.     |
+| **`is_dormant_risk`**          | Flag  | **Churn Risk.** 1 if MAU > 0 AND WAU = 0.                | Early warning for churn.                      |
 
 ### Account Trends (Velocity)
 
@@ -53,7 +66,45 @@ _Formula: `(Current - Lagged) / Days`. Represents average net daily growth for t
 | **WAU Velocity** | `wau_trend_7d` | `wau_trend_14d` | `wau_trend_30d` |
 | **MAU Velocity** | `mau_trend_7d` | `mau_trend_14d` | `mau_trend_30d` |
 
-## 3. Account Dimensions (`dim_accounts`)
+### GTM Signals
+
+| Column                     | Definition                                                   | Use Case                                                    |
+| :------------------------- | :----------------------------------------------------------- | :---------------------------------------------------------- |
+| **net_new_users_7d**       | **Expansion Signal.** Change in active seats vs. last week.  | **Sales:** Identify accounts adding users rapidly.          |
+| **volume_change_ratio_7d** | **Churn Signal.** Ratio of Event Volume (Last 7d / Prev 7d). | **Success:** Detect sharp drops in usage intensity (\<0.5). |
+
+## 3. User Metrics & Champions (`fct_user_metrics_daily`)
+
+**Description:** Snapshot of individual user behavior.  
+**Grain:** One row per User (Latest Snapshot).
+
+### Core User Metrics
+
+| Column                    | Type    | Definition                                       | Context                                        |
+| :------------------------ | :------ | :----------------------------------------------- | :--------------------------------------------- |
+| **`metric_date`**         | Date    | Snapshot date.                                   | Latest date for this user.                     |
+| **`user_id`**             | String  | Unique User ID.                                  | Primary identifier.                            |
+| **`latest_account_id`**   | String  | Most recent Account ID.                          | Connects user to their organization.           |
+| **`n_events_daily`**      | Integer | Events performed on snapshot date.               | Daily usage volume.                            |
+| **`n_events_monthly`**    | Integer | **30-Day Volume.** Total events in last 30 days. | Measures overall activity. Used for ranking.   |
+| **`is_active_daily`**     | Flag    | 1 if user was active on snapshot date.           |                                                |
+| **`is_active_weekly`**    | Flag    | 1 if user was active in last 7 days.             |                                                |
+| **`is_active_monthly`**   | Flag    | 1 if user was active in last 30 days.            |                                                |
+| **`active_days_last_7`**  | Integer | **L7 Frequency.** Days active in last 7 days.    | 3+ indicates a "Power User".                   |
+| **`active_days_last_14`** | Integer | **L14 Frequency.** Days active in last 14 days.  | **Champions:** 10+ days = highly engaged user. |
+
+### GTM Signals
+
+| Column                         | Definition                                         | Use Case                                               |
+| :----------------------------- | :------------------------------------------------- | :----------------------------------------------------- |
+| **usage_rank_in_account**      | **Champion Signal.** Rank by monthly volume.       | **Marketing:** Identify Rank 1 users for case studies. |
+| **is_admin_proxy**             | **Buyer Signal.** First user ever seen in account. | **Sales:** Target for renewal discussions.             |
+| **distinct_features_used_30d** | **Sophistication.** Unique features used.          | **Product:** Identify power users.                     |
+| **user_lifecycle_status**      | New, Active, Dormant, Resurrected, Churned.        | **Growth:** Retention analysis.                        |
+
+## 4. Dimensions
+
+### Account Dimensions (`dim_accounts`)
 
 **Description:** Master record of every company.
 
@@ -62,6 +113,30 @@ _Formula: `(Current - Lagged) / Days`. Represents average net daily growth for t
 | Column Name                 | Definition                                                        |
 | :-------------------------- | :---------------------------------------------------------------- |
 | **`account_id`**            | Unique Account ID.                                                |
+| **`first_seen_at`**         | Timestamp of first event for this account.                        |
+| **`last_seen_at`**          | Timestamp of most recent event for this account.                  |
 | **`current_active_seats`**  | **Current Seats Proxy.** Unique users active in the last 30 days. |
 | **`lifetime_unique_users`** | Total users ever seen for this account.                           |
+| **`days_since_first_seen`** | Account age in days.                                              |
 | **`days_since_last_seen`**  | Days since last activity. >30 indicates Churn.                    |
+
+### User Dimensions (`dim_users`)
+
+**Description:** Master record of every user.
+**Grain:** One row per User.
+
+| Column Name                      | Definition                                            |
+| :------------------------------- | :---------------------------------------------------- |
+| **`user_id`**                    | Unique User ID.                                       |
+| **`first_seen_at`**              | Timestamp of first event for this user.               |
+| **`last_seen_at`**               | Timestamp of most recent event for this user.         |
+| **`lifetime_accounts_distinct`** | Number of unique accounts this user has engaged with. |
+| **`latest_account_id`**          | Most recent Account ID for this user.                 |
+| **`days_since_first_seen`**      | User tenure in days.                                  |
+| **`days_since_last_seen`**       | Days since last activity. >30 indicates Churn.        |
+
+## 5. Notes
+
+- All definitions assume a standard activity event log with `user_id`, `account_id`, and `event_timestamp`.
+- Adjust definitions as needed to fit your specific product and data model.
+- For implementation, use dbt to create models based on these definitions.
