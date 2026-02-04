@@ -53,7 +53,7 @@ rolling_metrics as (
         count(distinct case when g.activity_date > {{ dbt.dateadd('day', -30, 's.metric_date') }} then g.event_name end) as distinct_features_used_30d,
 
         -- STICKINESS FREQUENCY
-        count(distinct case when g.activity_date > {{ dbt.dateadd('day', -7, 's.metric_date') }} then g.activity_date end) as active_days_7d
+        count(distinct case when g.activity_date > {{ dbt.dateadd('day', -7, 's.metric_date') }} then g.activity_date end) as active_days_7d,
         count(distinct case when g.activity_date > {{ dbt.dateadd('day', -30, 's.metric_date') }} then g.activity_date end) as active_days_30d
 
     from account_spine s
@@ -113,7 +113,7 @@ select
     end as volume_change_ratio_7d,
 
     -- Standard Ratios
-    round(active_days_7d / active_days_30d, 2) as account_stickiness_ratio,
+    round(active_days_7d / nullif(active_days_30d, 0), 2) as account_stickiness_ratio,
     case when mau > 0 then round(dau / mau, 2) else 0 end as user_stickiness_ratio,
     case when mau > 0 and wau = 0 then 1 else 0 end as is_dormant_risk,
 
