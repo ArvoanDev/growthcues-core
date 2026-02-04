@@ -14,13 +14,16 @@ SCHEMA_NAME = os.environ.get("SCHEMA_NAME", "growthcues_core")
 # the environment variable GOOGLE_APPLICATION_CREDENTIALS is set automatically.
 client = bigquery.Client(project=PROJECT_ID)
 
+print(f"Using GCP Project: {PROJECT_ID}")
+print(f"Using BigQuery Schema: {SCHEMA_NAME}")
+
 # 2. The Logic: Find "Silent Churn"
 # We look for accounts where usage volume dropped by >50% week-over-week
 query = f"""
     SELECT
         account_id,
         volume_change_ratio_7d,
-        active_days_last_7
+        active_days_7d
     FROM `{PROJECT_ID}.{SCHEMA_NAME}.fct_account_metrics_daily`
     WHERE metric_date = DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
       AND volume_change_ratio_7d < 0.5 
@@ -62,7 +65,7 @@ def send_slack_alert(accounts):
                 "type": "section",
                 "text": {
                     "type": "mrkdwn",
-                    "text": f"*Account `{row['account_id']}`*\n📉 Usage dropped by *{vol_drop}%*\n🗓 Active Days: {row['active_days_last_7']}/7",
+                    "text": f"*Account `{row['account_id']}`*\n📉 Usage dropped by *{vol_drop}%*\n🗓 Active Days: {row['active_days_7d']}/7",
                 },
             }
         )
