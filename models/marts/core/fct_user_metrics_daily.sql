@@ -90,15 +90,16 @@ windowed as (
             partition by user_id 
             order by metric_date 
             rows between 13 preceding and current row
-        ) as active_days_last_14,
-        
-        lag(max(is_active_daily) over (
-            partition by user_id 
-            order by metric_date 
-            rows between 29 preceding and current row
-        ), 1) over (partition by user_id order by metric_date) as was_active_monthly_yesterday
+        ) as active_days_last_14
 
     from joined_data
+),
+
+windowed_lag as (
+    select
+        *,
+        lag(is_active_monthly, 1) over (partition by user_id order by metric_date) as was_active_monthly_yesterday
+    from windowed
 )
 
 select
@@ -131,14 +132,14 @@ select
 
     -- Lifecycle Logic
     case
-        when w.metric_date = cast(w.first_seen_at as date) then 'New'
+        when w.metric_date = cast(u.first_seen_at as date) then 'New'
         when w.is_active_daily = 1 and (w.was_active_monthly_yesterday = 0 or w.was_active_monthly_yesterday is null) then 'Resurrected'
         when w.is_active_monthly = 0 then 'Churned'
         when w.is_active_daily = 1 then 'Active'
         else 'Dormant'
     end as user_lifecycle_status
 
-from windowed w
+from windowed_lag w
 left join users u on w.user_id = u.user_id
 left join accounts a on u.latest_account_id = a.account_id
 
