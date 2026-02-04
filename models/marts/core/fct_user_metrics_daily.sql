@@ -133,7 +133,7 @@ select
 
     -- Lifecycle Logic
     case
-        when w.metric_date = cast(w.first_seen_at as date) then 'New'
+        when w.metric_date = cast(u.first_seen_at as date) then 'New'
         when w.is_active_daily = 1 and (w.was_active_monthly_yesterday = 0 or w.was_active_monthly_yesterday is null) then 'Resurrected'
         when w.is_active_monthly = 0 then 'Churned'
         when w.is_active_daily = 1 then 'Active'
