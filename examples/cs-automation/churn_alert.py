@@ -33,6 +33,7 @@ query = f"""
       AND volume_change_ratio_7d > 0          -- But not completely silent (separate alert)
       AND is_active_monthly = 1               -- Account is still active (not already churned)
       AND wau >= 2                            -- Meaningful baseline: at least 2 weekly active users
+      AND account_id IS NOT NULL              -- Valid account check
     ORDER BY volume_change_ratio_7d ASC       -- Most severe drops first
     LIMIT 5
 """
