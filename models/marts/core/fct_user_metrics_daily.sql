@@ -39,6 +39,7 @@ joined_data as (
     select
         ud.metric_date,
         ud.user_id,
+        ud.first_seen_at,
         coalesce(da.n_events, 0) as n_events_daily,
         coalesce(da.n_features, 0) as n_features_daily,
         case when coalesce(da.n_events, 0) > 0 then 1 else 0 end as is_active_daily
@@ -95,7 +96,7 @@ windowed as (
     from joined_data
 ),
 
-windowed_lag as (
+lifecycle_prep as (
     select
         *,
         lag(is_active_monthly, 1) over (partition by user_id order by metric_date) as was_active_monthly_yesterday
@@ -139,7 +140,7 @@ select
         else 'Dormant'
     end as user_lifecycle_status
 
-from windowed_lag w
+from lifecycle_prep w
 left join users u on w.user_id = u.user_id
 left join accounts a on u.latest_account_id = a.account_id
 

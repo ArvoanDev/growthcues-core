@@ -1,0 +1,45 @@
+# ------------------------------------------------------------------------------
+# GROWTHCUES AUTOMATION TEMPLATE
+# To activate this workflow:
+# 1. Copy this file to .github/workflows/churn_guard.yml
+# 2. Configure the Secrets in your GitHub Repo settings
+# ------------------------------------------------------------------------------
+
+name: Daily Churn Guard
+
+on:
+  schedule:
+    # Run at 08:00 UTC every day
+    - cron: "0 8 * * *"
+  # Allow manual trigger for demos
+  workflow_dispatch:
+
+jobs:
+  run-churn-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+
+      - name: Install Dependencies
+        run: |
+          pip install google-cloud-bigquery requests
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Run Churn Alert Script
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          SCHEMA_NAME: ${{ secrets.SCHEMA_NAME }}
+        # Ensure you reference the script location correctly
+        run: python examples/cs-automation/churn_alert.py

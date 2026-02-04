@@ -98,7 +98,10 @@ select
     case when wau > 0 then 1 else 0 end as is_active_weekly,
     case when mau > 0 then 1 else 0 end as is_active_monthly,
 
+    n_events_daily,
     distinct_features_used_30d,
+    active_days_7d,
+    active_days_30d,
     
     -- GTM SIGNALS -------------------------
     
