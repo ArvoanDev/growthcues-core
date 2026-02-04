@@ -40,5 +40,6 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          SCHEMA_NAME: ${{ secrets.SCHEMA_NAME }}
         # Ensure you reference the script location correctly
         run: python examples/cs-automation/churn_alert.py

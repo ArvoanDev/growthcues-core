@@ -34,11 +34,12 @@ To run securely, GitHub needs access to your keys.
 2. Go to **Settings** \-\> **Secrets and variables** \-\> **Actions**.
 3. Click **New repository secret** for each of the following:
 
-| Name              | Value                                                       |
-| :---------------- | :---------------------------------------------------------- |
-| SLACK_WEBHOOK_URL | The URL you copied from Slack.                              |
-| GCP_PROJECT_ID    | Your Google Cloud Project ID (string).                      |
-| GCP_SA_KEY        | The **entire content** of the JSON key file you downloaded. |
+| Name              | Value                                                                       |
+| :---------------- | :-------------------------------------------------------------------------- |
+| SLACK_WEBHOOK_URL | The URL you copied from Slack.                                              |
+| GCP_PROJECT_ID    | Your Google Cloud Project ID (string).                                      |
+| SCHEMA_NAME       | (Optional) Your BigQuery dataset/schema name. Default is "growthcues_core". |
+| GCP_SA_KEY        | The **entire content** of the JSON key file you downloaded.                 |
 
 ## 3. Activate the Automation
 
