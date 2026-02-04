@@ -198,6 +198,31 @@ models:
           [Formula] COUNT(DISTINCT user_id) within this account in last 30 days.
           [Context] Count of unique users active in this account over the last 30 days.
 
+      # --- VOLUME & DEPTH ---
+      - name: n_events_daily
+        description: >
+          [Definition] Total events performed by this account today.
+          [Formula] COUNT(*) from daily activity where activity_date = metric_date.
+          [Context] Approximation of daily volume. Higher volume = higher engagement.
+
+      - name: distinct_features_used_30d
+        description: >
+          [Definition] Feature Breadth (Product Depth).
+          [Formula] COUNT(DISTINCT event_name) within this account in last 30 days.
+          [Context] Proxy for how deeply the account is using the product. More features = stickier customer.
+
+      - name: active_days_7d
+        description: >
+          [Definition] Number of days active in the last 7 days.
+          [Formula] COUNT(DISTINCT activity_date) where activity_date > metric_date - 7 days.
+          [Context] Frequency indicator. 5-7 days = highly engaged.
+
+      - name: active_days_30d
+        description: >
+          [Definition] Number of days active in the last 30 days.
+          [Formula] COUNT(DISTINCT activity_date) where activity_date > metric_date - 30 days.
+          [Context] Frequency indicator. Used in stickiness ratio calculation.
+
       # --- FLAGS ---
       - name: is_active_daily
         description: >
@@ -215,12 +240,25 @@ models:
           [Formula] 1 if MAU > 0, else 0.
           [Context] Binary indicator if the account is retained (active this month).
 
+      # --- GTM SIGNALS ---
+      - name: net_new_users_7d
+        description: >
+          [Definition] Weekly Seat Velocity (Expansion Signal).
+          [Formula] Current WAU - WAU 7 Days Ago.
+          [Context] Positive values indicate seat expansion within this account. Key signal for upsell opportunity.
+
+      - name: volume_change_ratio_7d
+        description: >
+          [Definition] Usage Contraction Signal (Churn Warning).
+          [Formula] (Sum of events last 7 days) / (Sum of events prior 7 days).
+          [Context] <1.0 means usage is declining. <0.5 is a strong churn signal.
+
       # --- RATIOS ---
       - name: account_stickiness_ratio
         description: >
           [Definition] Account Usage Frequency.
-          [Formula] (Number of Active Days in Last 7 Days) / 7.
-          [Context] 1.0 = Uses product every day. <0.15 = Churn Risk.
+          [Formula] active_days_7d / active_days_30d.
+          [Context] Measures consistency. 1.0 = Uses product every day. <0.15 = Churn Risk.
       - name: user_stickiness_ratio
         description: >
           [Definition] User Depth.
@@ -337,6 +375,37 @@ models:
           [Formula] SUM(is_active_daily) over 7 day window.
           [Context] 3+ indicates a "Power User" for most B2B apps.
 
+      - name: active_days_last_14
+        description: >
+          [Definition] Days active in last 14 days.
+          [Formula] SUM(is_active_daily) over 14 day window.
+          [Context] Champion Metric. 10+ days in L14 = highly engaged power user.
+
+      - name: n_events_monthly
+        description: >
+          [Definition] Total events performed by this user in the last 30 days.
+          [Formula] SUM(n_events_daily) over 30 day window.
+          [Context] Measures overall usage volume. Used to rank users within accounts.
+
+      # --- GTM SIGNALS ---
+      - name: usage_rank_in_account
+        description: >
+          [Definition] User's rank within their account based on usage volume.
+          [Formula] ROW_NUMBER() OVER (PARTITION BY account_id, metric_date ORDER BY n_events_monthly DESC).
+          [Context] Rank 1 = Champion user. Target for customer success engagement.
+
+      - name: is_admin_proxy
+        description: >
+          [Definition] Proxy indicator for admin or buyer persona.
+          [Formula] 1 if user's first_seen_at = account's first_seen_at, else 0.
+          [Context] First user in an account is likely the buyer/admin. Key contact for renewals.
+
+      - name: distinct_features_used_30d
+        description: >
+          [Definition] Feature Sophistication Score.
+          [Formula] COUNT(DISTINCT event_name) in last 30 days.
+          [Context] Measures product depth. Higher = more sophisticated user.
+
       - name: user_lifecycle_status
         description: >
           [Definition] Current Lifecycle State.
@@ -344,7 +413,9 @@ models:
           [Context] Critical for "Growth Accounting" and understanding net user growth.
 
   - name: dim_accounts
-    description: "[Definition] Master table of all accounts."
+    description: >
+      [Definition] Master dimension table containing one row per unique account (company/organization).
+      [Context] Use this table to understand account lifecycle, size, and activity patterns. Join to fact tables for account-level analysis.
     columns:
       - name: account_id
         tests: [unique, not_null]
@@ -390,7 +461,9 @@ models:
           [Context] >30 days strongly suggests churn.
 
   - name: dim_users
-    description: "[Definition] Master table of all users."
+    description: >
+      [Definition] Master dimension table containing one row per unique user (individual human).
+      [Context] Use this table to understand user lifecycle, tenure, and account associations. Join to fact tables for user-level analysis.
     columns:
       - name: user_id
         tests: [unique, not_null]
@@ -418,3 +491,15 @@ models:
           [Definition] The most recent Account ID associated with this user.
           [Formula] account_id from the most recent track event.
           [Context] Useful for mapping users to their current primary organization.
+
+      - name: days_since_first_seen
+        description: >
+          [Definition] User tenure in days.
+          [Formula] DATEDIFF(day, first_seen_at, current_timestamp).
+          [Context] Used for user cohort analysis and understanding user lifecycle stage.
+
+      - name: days_since_last_seen
+        description: >
+          [Definition] Days since user was last active.
+          [Formula] DATEDIFF(day, last_seen_at, current_timestamp).
+          [Context] Recency indicator. >30 days suggests the user may have churned.

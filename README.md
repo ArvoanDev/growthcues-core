@@ -8,21 +8,21 @@ A dbt project to calculate **Account-Level** and **Product-Level** metrics from 
 
 ## 📖 What is this?
 
-**GrowthCues Core** is an open-source dbt project that acts as the foundational semantic layer for Product-Led Growth (PLG) teams.
+**GrowthCues Core** is an open-source dbt project that acts as the foundational semantic layer for Product-Led Growth (PLG) teams in B2B SaaS organizations.
 
 Most analytics tools focus only on Users. B2B businesses need to track **Accounts**. This project handles both.
 
-It produces three critical tables in your warehouse:
+It produces five critical tables in your warehouse:
 
-1. **`fct_product_metrics_daily`**: The executive view. Global DAU/MAU and Account volume (DAA/MAA) across the entire product.
+1. **`fct_product_metrics_daily`**: The executive view. Global DAU/WAU/MAU and Account volume (DAA/WAA/MAA) across the entire product, with velocity trends.
 
-2. **`fct_account_metrics_daily`**: The operational view. Granular, account-by-account health metrics including Stickiness, Seat Utilization, and Churn Risk.
+2. **`fct_account_metrics_daily`**: The operational view. Granular, account-by-account health metrics including Stickiness, Feature Breadth, Seat Velocity, Usage Contraction, and Churn Risk flags.
 
-3. **`fct_user_metrics_daily`**: The behavioral view. Daily snapshots of individual user activity, frequency, and lifecycle status.
+3. **`fct_user_metrics_daily`**: The behavioral view. Snapshot of individual user activity, frequency, champion identification, admin proxy flags, and lifecycle status.
 
-4. **`dim_accounts`**: A master record of every company, including "Last Seen" dates and age.
+4. **`dim_accounts`**: A master dimension table for every company, including first/last seen timestamps, current active seats, lifetime users, and days since activity.
 
-5. **`dim_users`**: A master record of every user, including lifetime stats and their primary account.
+5. **`dim_users`**: A master dimension table for every user, including first/last seen timestamps, lifetime account associations, and primary account mapping.
 
 ## 🚀 Features
 
@@ -30,7 +30,7 @@ It produces three critical tables in your warehouse:
 
 - **B2B Standard:** Compatible out-of-the-box with Segment and Rudderstack using the **Segment B2B SaaS spec** (requires `context_group_id` in tracks table for account identification).
 
-- **Dual Granularity:** Calculates metrics at both the Global (Product) level and the Account (Customer) level.
+- **B2B SaaS Granularity:** Calculates metrics at the Global (Product), Account (Customer), and User (Person) levels.
 
 - **Zero Hallucinations:** Includes a specialized `schema.yml` designed to ground LLMs (ChatGPT/Claude) in your specific business logic.
 
@@ -40,6 +40,7 @@ It produces three critical tables in your warehouse:
 
 Before you begin, ensure you have:
 
+- dbt Core (v1.0+) or dbt Cloud.
 - **Python 3.10 or higher** installed on your computer
 - Access to a **Snowflake** or **BigQuery** warehouse with appropriate permissions
 - Raw data from **Segment** or **Rudderstack** loaded into your warehouse following the **Segment B2B SaaS spec**:
@@ -384,50 +385,76 @@ To keep your metrics up-to-date, you can:
 
 The hardest part of "Self-Serve Analytics" is that AI agents often hallucinate because they don't understand your business context.
 
-This project includes a **Prompt-Engineered Schema** located at `models/marts/core/schema.yml`.
+This project includes **Prompt-Engineered Documentation** with clear definitions, formulas, and context:
+
+- `models/marts/core/schema.yml` - Technical dbt schema with [Definition], [Formula], and [Context] tags
+- `METRICS.md` - User-friendly metrics dictionary in markdown format
 
 ### How to use it:
 
-1. Open `models/marts/core/schema.yml`.
+1. Open `models/marts/core/schema.yml` or `METRICS.md`.
 2. Copy the entire file content.
 3. Paste it into **ChatGPT**, **Claude**, or your internal AI agent with this prompt:
-   > "You are a Data Analyst. Here is the dbt schema for our B2B SaaS metrics table, including definitions, formulas, and context. Use this context to answer my questions.
+   > "You are a Data Analyst. Here is the metrics documentation for our B2B SaaS data warehouse, including definitions, formulas, and context. Use this context to answer my questions.
 
-> [PASTE YAML HERE]
+> [PASTE DOCUMENTATION HERE]
 
-> Question: Which accounts are currently at risk of churning based on their recent stickiness trends?"
+> Question: Which accounts are currently at risk of churning based on their recent usage trends?"
 
-4. **Result:** The AI will generate accurate SQL or answers based on the specific `[Definition]` and `[Context]` tags provided in the schema, eliminating hallucinations.
+4. **Result:** The AI will generate accurate SQL or answers based on the specific definitions and context provided, eliminating hallucinations and ensuring queries align with your business logic.
 
 ## 📊 Metrics Included
 
 ### Product Level (Global)
 
-_Source: `fct_product_metrics_daily_`
-| Metric | Definition |
-| :--- | :--- |
-| **Global DAU / WAU / MAU** | Unique **users** active in the last 1/7/30 days across the entire platform. |
-| **Global DAA / WAA / MAA** | Unique **accounts** active in the last 1/7/30 days across the entire platform. |
-| **Global Stickiness** | The ratio of Daily Active entities to Monthly Active entities (DAU/MAU or DAA/MAA). |
+_Source: `fct_product_metrics_daily`_
+
+| Metric                     | Definition                                                                                                         |
+| :------------------------- | :----------------------------------------------------------------------------------------------------------------- |
+| **Global DAU / WAU / MAU** | Unique **users** active in the last 1/7/30 days across the entire platform.                                        |
+| **Global DAA / WAA / MAA** | Unique **accounts** active in the last 1/7/30 days across the entire platform.                                     |
+| **Global Stickiness**      | The ratio of Daily Active entities to Monthly Active entities (DAU/MAU or DAA/MAA).                                |
+| **Velocity Trends**        | 7, 14, and 30-day linear trends for all DAU/WAU/MAU and DAA/WAA/MAA metrics. Represents average daily growth rate. |
 
 ### Account Level (Per Customer)
 
-_Source: `fct_account_metrics_daily_`
-| Metric | Definition | PLG Use Case |
-| :--- | :--- | :--- |
-| **Account Stickiness** | Frequency of usage (Active Days / 7). | Measuring habit formation for a specific client. |
-| **User Stickiness** | Ratio of DAU / MAU _within_ that account. | Measuring user depth. |
-| **Account Breadth** | Active Users within the Account. | Expansion revenue signals (upsell seats). |
-| **Dormant Risk** | Active in last 30 days, but 0 events in last 7 days. | Proactive churn prevention. |
+_Source: `fct_account_metrics_daily`_
+
+| Metric                      | Definition                                                        | PLG Use Case                                     |
+| :-------------------------- | :---------------------------------------------------------------- | :----------------------------------------------- |
+| **Account DAU / WAU / MAU** | Active users within this specific account (daily/weekly/monthly). | Measuring per-account seat utilization.          |
+| **Daily Event Volume**      | Total events performed by this account today.                     | Tracking engagement intensity.                   |
+| **Feature Breadth**         | Count of unique event types used in last 30 days.                 | Measuring product depth and sophistication.      |
+| **Active Days (7d/30d)**    | Number of days the account was active.                            | Frequency indicator for engagement patterns.     |
+| **Account Stickiness**      | Ratio of active_days_7d / active_days_30d.                        | Measuring usage consistency and habit formation. |
+| **User Stickiness**         | Ratio of DAU / MAU _within_ that account.                         | Measuring user depth and engagement quality.     |
+| **Dormant Risk**            | Active in last 30 days, but 0 events in last 7 days.              | Early warning for proactive churn prevention.    |
+| **Net New Users (7d)**      | Weekly seat velocity (change in active seats).                    | Expansion signals for upsell opportunities.      |
+| **Volume Change Ratio**     | Event volume trend (last 7d vs prior 7d).                         | Churn warning when usage is declining.           |
+| **Velocity Trends**         | 7, 14, and 30-day trends for DAU/WAU/MAU.                         | Account growth momentum tracking.                |
 
 ### User Level (Per Person)
 
-Source: `fct_user_metrics_daily`
-| Metric | Definition | PLG Use Case |
-| :--- | :--- | :--- |
-| Usage Frequency | Days active in last 7 days. | Identifying "Power Users" (3+ days/week). |
-| Lifecycle Status | New, Active, Dormant, Resurrected, or Churned. | Growth Accounting and retention analysis. |
-| Latest Account | The primary account ID for this user. | Mapping users to organizations. |
+_Source: `fct_user_metrics_daily`_
+
+| Metric                       | Definition                                           | PLG Use Case                                           |
+| :--------------------------- | :--------------------------------------------------- | :----------------------------------------------------- |
+| **Daily/Monthly Events**     | Event volume on snapshot date and over last 30 days. | Measuring individual user engagement intensity.        |
+| **Usage Frequency (L7/L14)** | Days active in last 7 and 14 days.                   | Identifying "Power Users" (3+ days in L7, 10+ in L14). |
+| **Usage Rank in Account**    | User's ranking by volume within their account.       | Identifying "Champions" (Rank 1) for customer success. |
+| **Admin Proxy Flag**         | First user seen in the account (likely buyer/admin). | Targeting decision-makers for renewals and expansion.  |
+| **Feature Sophistication**   | Count of unique features used in last 30 days.       | Measuring product depth and power user behavior.       |
+| **Lifecycle Status**         | New, Active, Dormant, Resurrected, or Churned.       | Growth Accounting and retention analysis.              |
+| **Latest Account**           | The primary account ID for this user.                | Mapping users to organizations.                        |
+
+### Dimension Tables
+
+_Sources: `dim_accounts` and `dim_users`_
+
+| Table            | Key Attributes                                                                                            | Use Case                                                                             |
+| :--------------- | :-------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------- |
+| **dim_accounts** | Account ID, first/last seen timestamps, current active seats, lifetime users, days since first/last seen. | Master account reference for joins, cohort analysis, and churn identification.       |
+| **dim_users**    | User ID, first/last seen timestamps, lifetime accounts, latest account, days since first/last seen.       | Master user reference for joins, understanding user tenure and account associations. |
 
 _See `METRICS.md` for full definitions._
 
@@ -437,21 +464,21 @@ This repository handles the Descriptive Layer of your GTM stack (answering "what
 
 Do you want to go further and to track user or customer journeys, or predict account behavior for sales/CS teams?
 
-GrowthCues is a headless semantic layer that runs on top of the same warehouse-native architecture but adds:
+I have built GrowthCues as a headless semantic layer for B2B SaaS that runs on top of the same warehouse-native architecture but adds:
+
+- No-Code Journey Modeling: Define complex milestones (e.g., "Onboarding Complete") and journey completion scores without writing SQL.
+
+- Predictive Scoring: AI-generated "Likelihood to Convert" and "Likelihood to Churn" scores.
 
 - Advanced Trends: Detects true trajectory using linear regression and complex windowing (vs. simplified linear velocity in this repo).
 
 - Compute Savings: Calculations run on the GrowthCues engine, eliminating the daily compute costs on your Snowflake/BigQuery warehouse.
 
-- Predictive Scoring: AI-generated "Likelihood to Convert" and "Likelihood to Churn" scores.
-
-- No-Code Journey Modeling: Define complex milestones (e.g., "Onboarding Complete") and journey completion scores without writing SQL.
-
 - Reverse ETL Ready: Sync signals directly to Salesforce, HubSpot, or Slack.
 
-- AI Ready: Auto-generated dbt schema optimized for LLMs to prevent hallucinations.
+- AI Ready: Auto-generated dbt schema optimized for LLMs to prevent hallucinations. Includes also the metrics for customer journeys and predictions.
 
-If you need to go beyond standard metrics and start predicting user behavior, check out [growthcues.com](https://growthcues.com).
+If you need to go beyond standard metrics and start tracking or predicting customer journeys, check out [growthcues.com](https://growthcues.com).
 
 ## License
 
