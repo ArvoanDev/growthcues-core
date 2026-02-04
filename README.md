@@ -8,7 +8,7 @@ A dbt project to calculate **Account-Level** and **Product-Level** metrics from 
 
 ## 📖 What is this?
 
-**GrowthCues Core** is an open-source dbt project that acts as the foundational semantic layer for Product-Led Growth (PLG) teams.
+**GrowthCues Core** is an open-source dbt project that acts as the foundational semantic layer for Product-Led Growth (PLG) teams in B2B SaaS organizations.
 
 Most analytics tools focus only on Users. B2B businesses need to track **Accounts**. This project handles both.
 
