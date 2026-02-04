@@ -19,17 +19,21 @@ print(f"Using BigQuery Schema: {SCHEMA_NAME}")
 
 # 2. The Logic: Find "Silent Churn"
 # We look for accounts where usage volume dropped by >50% week-over-week
+# BUT only for accounts that are actually engaged (not noise)
 query = f"""
     SELECT
         account_id,
         volume_change_ratio_7d,
         active_days_7d,
-        wau
+        wau,
+        mau
     FROM `{PROJECT_ID}.{SCHEMA_NAME}.fct_account_metrics_daily`
     WHERE metric_date = DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
-      AND volume_change_ratio_7d < 0.5 
-      AND volume_change_ratio_7d > 0
-    ORDER BY volume_change_ratio_7d ASC
+      AND volume_change_ratio_7d < 0.5        -- Usage dropped by >50%
+      AND volume_change_ratio_7d > 0          -- But not completely silent (separate alert)
+      AND is_active_monthly = 1               -- Account is still active (not already churned)
+      AND wau >= 2                            -- Meaningful baseline: at least 2 weekly active users
+    ORDER BY volume_change_ratio_7d ASC       -- Most severe drops first
     LIMIT 5
 """
 
