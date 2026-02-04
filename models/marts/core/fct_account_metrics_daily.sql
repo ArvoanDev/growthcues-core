@@ -116,7 +116,7 @@ select
     end as volume_change_ratio_7d,
 
     -- Standard Ratios
-    round(active_days_7d / active_days_30d, 2) as account_stickiness_ratio,
+    round(active_days_7d / nullif(active_days_30d, 0), 2) as account_stickiness_ratio,
     case when mau > 0 then round(dau / mau, 2) else 0 end as user_stickiness_ratio,
     case when mau > 0 and wau = 0 then 1 else 0 end as is_dormant_risk,
 
