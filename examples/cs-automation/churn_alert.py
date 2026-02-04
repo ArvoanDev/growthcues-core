@@ -23,7 +23,8 @@ query = f"""
     SELECT
         account_id,
         volume_change_ratio_7d,
-        active_days_7d
+        active_days_7d,
+        wau
     FROM `{PROJECT_ID}.{SCHEMA_NAME}.fct_account_metrics_daily`
     WHERE metric_date = DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
       AND volume_change_ratio_7d < 0.5 
@@ -68,7 +69,7 @@ def send_slack_alert(accounts):
                 "type": "section",
                 "text": {
                     "type": "mrkdwn",
-                    "text": f"*Account `{row['account_id']}`*\n📉 Usage dropped by *{vol_drop}%*\n🗓 Active Days: {row['active_days_7d']}/7",
+                    "text": f"*Account `{row['account_id']}`*\n📉 Usage dropped by *{vol_drop}%*\n🗓 Active Days: {row['active_days_7d']}/7\n👥 Weekly Active Users: {row['wau']}",
                 },
             }
         )
