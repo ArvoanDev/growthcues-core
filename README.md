@@ -2,13 +2,15 @@
 
 **The Open Source Semantic Layer for B2B SaaS.**
 
-A dbt project to calculate **Account-Level** and **Product-Level** metrics from Segment/Rudderstack data using the **Segment B2B SaaS spec**. Includes AI-ready schema context.
+A dbt project to calculate **Account-Level** and **Product-Level** metrics from Segment/Rudderstack data using the **Segment B2B SaaS spec**. Includes AI-ready schema context for LLMs, agentic analytics, and self-serve GTM insights.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg) ![dbt](https://img.shields.io/badge/dbt-1.0%2B-orange) ![Snowflake](https://img.shields.io/badge/Snowflake-Compatible-blue) ![BigQuery](https://img.shields.io/badge/BigQuery-Compatible-blue)
 
 ## 📖 What is this?
 
 **GrowthCues Core** is an open-source dbt project that acts as the foundational semantic layer for Product-Led Growth (PLG) teams in B2B SaaS organizations.
+
+👉 For a tutorial on how to use this for self-serve GTM analytics with Claude MCP, read: [The Zero-Context Dashboard](https://growthcues.com/blog/self-serve-analytics-claude-mcp/).
 
 Most analytics tools focus only on Users. B2B businesses need to track **Accounts**. This project handles both.
 
