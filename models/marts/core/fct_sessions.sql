@@ -19,7 +19,7 @@ WITH tracks_session_flags AS (
     -- Only process new data to save costs
     -- Lookback from last session end to catch sessions that might still be active
     -- This prevents splitting sessions across incremental runs
-    WHERE event_at >= (SELECT {{ dbt.dateadd('minute', -var('session_timeout_minutes', 30), 'MAX(session_end_at)') }} FROM {{ this }})
+    WHERE event_at >= CAST((SELECT {{ dbt.dateadd('minute', -var('session_timeout_minutes', 30), 'MAX(session_end_at)') }} FROM {{ this }}) AS TIMESTAMP)
     {% endif %}
 ),
 

@@ -14,17 +14,19 @@ A dbt project to calculate **Account-Level** and **Product-Level** metrics from 
 
 Most analytics tools focus only on Users. B2B businesses need to track **Accounts**. This project handles both.
 
-It produces five critical tables in your warehouse:
+It produces six critical tables in your warehouse:
 
 1. **`fct_product_metrics_daily`**: The executive view. Global DAU/WAU/MAU and Account volume (DAA/WAA/MAA) across the entire product, with velocity trends.
 
 2. **`fct_account_metrics_daily`**: The operational view. Granular, account-by-account health metrics including Stickiness, Feature Breadth, Seat Velocity, Usage Contraction, and Churn Risk flags.
 
-3. **`fct_user_metrics_daily`**: The behavioral view. Snapshot of individual user activity, frequency, champion identification, admin proxy flags, and lifecycle status.
+3. **`fct_user_metrics_daily`**: The behavioral view. Snapshot of individual user activity, frequency, session patterns, champion identification, admin proxy flags, and lifecycle status.
 
-4. **`dim_accounts`**: A master dimension table for every company, including first/last seen timestamps, current active seats, lifetime users, and days since activity.
+4. **`fct_sessions`**: The engagement view. Sessionized event data showing user engagement patterns including session duration, events per session, and session frequency.
 
-5. **`dim_users`**: A master dimension table for every user, including first/last seen timestamps, lifetime account associations, and primary account mapping.
+5. **`dim_accounts`**: A master dimension table for every company, including first/last seen timestamps, current active seats, lifetime users, and days since activity.
+
+6. **`dim_users`**: A master dimension table for every user, including first/last seen timestamps, lifetime account associations, and primary account mapping.
 
 ## 🚀 Features
 
@@ -294,6 +296,28 @@ dbt deps
 
 You should see a message confirming that packages were installed.
 
+### Step 7.5: Configure Session Timeout (Optional)
+
+By default, user sessions are defined with a 30-minute inactivity timeout. You can customize this in `dbt_project.yml`:
+
+```yaml
+vars:
+  session_timeout_minutes: 30 # Change to your preferred timeout in minutes
+```
+
+**What this controls:**
+
+- **Session definition:** Two events by the same user are considered part of the same session if they occur within this time window
+- **Incremental lookback:** When running incrementally, the model looks back this many minutes from the last session end to catch sessions that might still be active
+
+**Common values:**
+
+- **30 minutes** (default): Standard for most web applications
+- **60 minutes**: For products with longer, more contemplative workflows
+- **15 minutes**: For high-frequency, task-based applications
+
+After changing this value, run `dbt run --full-refresh` to recalculate all sessions with the new timeout.
+
 ### Step 8: Run the Models
 
 Now you're ready to build your metrics tables! Run:
@@ -304,10 +328,11 @@ dbt run
 
 **What happens:**
 
-- dbt will create five new tables/views in your warehouse:
+- dbt will create six new tables/views in your warehouse:
   - `fct_product_metrics_daily` - Global product metrics (DAU, MAU, DAA, MAA, etc.)
   - `fct_account_metrics_daily` - Account-level health metrics (stickiness, churn risk, etc.)
   - `fct_user_metrics_daily` - User-level behavioral metrics and lifecycle status
+  - `fct_sessions` - Session-level engagement data (duration, events per session, etc.)
   - `dim_accounts` - Master account dimension table
   - `dim_users` - Master user dimension table
 
@@ -439,15 +464,16 @@ _Source: `fct_account_metrics_daily`_
 
 _Source: `fct_user_metrics_daily`_
 
-| Metric                       | Definition                                           | PLG Use Case                                           |
-| :--------------------------- | :--------------------------------------------------- | :----------------------------------------------------- |
-| **Daily/Monthly Events**     | Event volume on snapshot date and over last 30 days. | Measuring individual user engagement intensity.        |
-| **Usage Frequency (L7/L14)** | Days active in last 7 and 14 days.                   | Identifying "Power Users" (3+ days in L7, 10+ in L14). |
-| **Usage Rank in Account**    | User's ranking by volume within their account.       | Identifying "Champions" (Rank 1) for customer success. |
-| **Admin Proxy Flag**         | First user seen in the account (likely buyer/admin). | Targeting decision-makers for renewals and expansion.  |
-| **Feature Sophistication**   | Count of unique features used in last 30 days.       | Measuring product depth and power user behavior.       |
-| **Lifecycle Status**         | New, Active, Dormant, Resurrected, or Churned.       | Growth Accounting and retention analysis.              |
-| **Latest Account**           | The primary account ID for this user.                | Mapping users to organizations.                        |
+| Metric                       | Definition                                                        | PLG Use Case                                           |
+| :--------------------------- | :---------------------------------------------------------------- | :----------------------------------------------------- |
+| **Daily/Monthly Events**     | Event volume on snapshot date and over last 30 days.              | Measuring individual user engagement intensity.        |
+| **Session Metrics**          | Sessions per day/month, avg session duration, events per session. | Understanding engagement depth and usage patterns.     |
+| **Usage Frequency (L7/L14)** | Days active in last 7 and 14 days.                                | Identifying "Power Users" (3+ days in L7, 10+ in L14). |
+| **Usage Rank in Account**    | User's ranking by volume within their account.                    | Identifying "Champions" (Rank 1) for customer success. |
+| **Admin Proxy Flag**         | First user seen in the account (likely buyer/admin).              | Targeting decision-makers for renewals and expansion.  |
+| **Feature Sophistication**   | Count of unique features used in last 30 days.                    | Measuring product depth and power user behavior.       |
+| **Lifecycle Status**         | New, Active, Dormant, Resurrected, or Churned.                    | Growth Accounting and retention analysis.              |
+| **Latest Account**           | The primary account ID for this user.                             | Mapping users to organizations.                        |
 
 ### Dimension Tables
 

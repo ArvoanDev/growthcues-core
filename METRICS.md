@@ -80,18 +80,22 @@ _Formula: `(Current - Lagged) / Days`. Represents average net daily growth for t
 
 ### Core User Metrics
 
-| Column                    | Type    | Definition                                       | Context                                        |
-| :------------------------ | :------ | :----------------------------------------------- | :--------------------------------------------- |
-| **`metric_date`**         | Date    | Snapshot date.                                   | Latest date for this user.                     |
-| **`user_id`**             | String  | Unique User ID.                                  | Primary identifier.                            |
-| **`latest_account_id`**   | String  | Most recent Account ID.                          | Connects user to their organization.           |
-| **`n_events_daily`**      | Integer | Events performed on snapshot date.               | Daily usage volume.                            |
-| **`n_events_monthly`**    | Integer | **30-Day Volume.** Total events in last 30 days. | Measures overall activity. Used for ranking.   |
-| **`is_active_daily`**     | Flag    | 1 if user was active on snapshot date.           |                                                |
-| **`is_active_weekly`**    | Flag    | 1 if user was active in last 7 days.             |                                                |
-| **`is_active_monthly`**   | Flag    | 1 if user was active in last 30 days.            |                                                |
-| **`active_days_last_7`**  | Integer | **L7 Frequency.** Days active in last 7 days.    | 3+ indicates a "Power User".                   |
-| **`active_days_last_14`** | Integer | **L14 Frequency.** Days active in last 14 days.  | **Champions:** 10+ days = highly engaged user. |
+| Column                                     | Type    | Definition                                                                 | Context                                           |
+| :----------------------------------------- | :------ | :------------------------------------------------------------------------- | :------------------------------------------------ |
+| **`metric_date`**                          | Date    | Snapshot date.                                                             | Latest date for this user.                        |
+| **`user_id`**                              | String  | Unique User ID.                                                            | Primary identifier.                               |
+| **`latest_account_id`**                    | String  | Most recent Account ID.                                                    | Connects user to their organization.              |
+| **`n_events_daily`**                       | Integer | Events performed on snapshot date.                                         | Daily usage volume.                               |
+| **`n_events_monthly`**                     | Integer | **30-Day Volume.** Total events in last 30 days.                           | Measures overall activity. Used for ranking.      |
+| **`is_active_daily`**                      | Flag    | 1 if user was active on snapshot date.                                     |                                                   |
+| **`is_active_weekly`**                     | Flag    | 1 if user was active in last 7 days.                                       |                                                   |
+| **`is_active_monthly`**                    | Flag    | 1 if user was active in last 30 days.                                      |                                                   |
+| **`active_days_last_7`**                   | Integer | **L7 Frequency.** Days active in last 7 days.                              | 3+ indicates a "Power User".                      |
+| **`active_days_last_14`**                  | Integer | **L14 Frequency.** Days active in last 14 days.                            | **Champions:** 10+ days = highly engaged user.    |
+| **`n_sessions_daily`**                     | Integer | **Daily Sessions.** Number of sessions started on this day.                | Measures distinct usage sessions.                 |
+| **`n_sessions_monthly`**                   | Integer | **Monthly Sessions.** Total sessions in last 30 days.                      | Higher counts = more frequent engagement.         |
+| **`avg_session_duration_minutes_monthly`** | Float   | **Avg Session Time.** Average session length in minutes over last 30 days. | Longer sessions = deeper engagement.              |
+| **`avg_session_length_monthly`**           | Float   | **Avg Session Intensity.** Average events per session over last 30 days.   | More events per session = higher intensity usage. |
 
 ### GTM Signals
 
@@ -102,7 +106,25 @@ _Formula: `(Current - Lagged) / Days`. Represents average net daily growth for t
 | **distinct_features_used_30d** | **Sophistication.** Unique features used.          | **Product:** Identify power users.                     |
 | **user_lifecycle_status**      | New, Active, Dormant, Resurrected, Churned.        | **Growth:** Retention analysis.                        |
 
-## 4. Dimensions
+## 4. Session Engagement Metrics (`fct_sessions`)
+
+**Description:** Sessionized event data showing engagement patterns.  
+**Grain:** One row per User Session.
+
+**A session is a sequence of events by the same user with no more than 30 minutes (configurable via `session_timeout_minutes` variable) of inactivity between events.**
+
+### Core Session Metrics
+
+| Column                         | Type      | Definition                        | Context                                                |
+| :----------------------------- | :-------- | :-------------------------------- | :----------------------------------------------------- |
+| **`session_id`**               | String    | Unique session identifier.        | Primary key for the sessions table.                    |
+| **`user_id`**                  | String    | User who performed the session.   | Links sessions back to users.                          |
+| **`session_start_at`**         | Timestamp | When the session started.         | Table partitioned by this field.                       |
+| **`session_end_at`**           | Timestamp | When the session ended.           | Used to calculate duration.                            |
+| **`session_duration_seconds`** | Integer   | Length of session in seconds.     | Single-event sessions = 0. Longer = deeper engagement. |
+| **`events_in_session`**        | Integer   | Number of events in this session. | Power users have more events per session.              |
+
+## 5. Dimensions
 
 ### Account Dimensions (`dim_accounts`)
 
@@ -135,7 +157,7 @@ _Formula: `(Current - Lagged) / Days`. Represents average net daily growth for t
 | **`days_since_first_seen`**      | User tenure in days.                                  |
 | **`days_since_last_seen`**       | Days since last activity. >30 indicates Churn.        |
 
-## 5. Notes
+## 6. Notes
 
 - All definitions assume a standard activity event log with `user_id`, `account_id`, and `event_timestamp`.
 - Adjust definitions as needed to fit your specific product and data model.

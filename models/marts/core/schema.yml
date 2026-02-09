@@ -387,6 +387,30 @@ models:
           [Formula] SUM(n_events_daily) over 30 day window.
           [Context] Measures overall usage volume. Used to rank users within accounts.
 
+      - name: n_sessions_daily
+        description: >
+          [Definition] Number of sessions started on this day.
+          [Formula] COUNT(*) from fct_sessions where session_start_at date = metric_date.
+          [Context] Measures how many distinct usage sessions the user had today.
+
+      - name: n_sessions_monthly
+        description: >
+          [Definition] Total sessions in the last 30 days.
+          [Formula] SUM(n_sessions_daily) over 30 day window.
+          [Context] Higher session counts indicate more frequent product engagement.
+
+      - name: avg_session_duration_minutes_monthly
+        description: >
+          [Definition] Average session length in minutes over last 30 days.
+          [Formula] AVG(session_duration_seconds / 60) over 30 day window.
+          [Context] Longer sessions typically indicate deeper engagement. Consider product type when interpreting.
+
+      - name: avg_session_length_monthly
+        description: >
+          [Definition] Average number of events per session over last 30 days.
+          [Formula] AVG(events_in_session) over 30 day window.
+          [Context] More events per session indicates higher intensity usage. Power users have higher values.
+
       # --- GTM SIGNALS ---
       - name: usage_rank_in_account
         description: >
@@ -411,6 +435,53 @@ models:
           [Definition] Current Lifecycle State.
           [Formula] Logic based on history: New, Active, Dormant, Resurrected, Churned.
           [Context] Critical for "Growth Accounting" and understanding net user growth.
+
+  - name: fct_sessions
+    description: >
+      [Definition] Sessionized event data table containing one row per user session.
+      A session is a sequence of events by the same user with no more than 30 minutes (configurable) of inactivity between events.
+      [Context] Use this table to analyze session-level patterns like session duration, events per session, and session frequency.
+      Materialized incrementally with partitioning for cost efficiency.
+    columns:
+      - name: session_id
+        tests: [unique, not_null]
+        description: >
+          [Definition] Unique identifier for each session.
+          [Formula] Surrogate key generated from user_id and user_session_index.
+          [Context] Primary key for the sessions table.
+
+      - name: user_id
+        tests: [not_null]
+        description: >
+          [Definition] Unique User ID.
+          [Formula] From stg_segment_tracks.
+          [Context] Links sessions back to individual users.
+
+      - name: session_start_at
+        tests: [not_null]
+        description: >
+          [Definition] Timestamp when the session started.
+          [Formula] MIN(event_at) within the session grouping.
+          [Context] Used for time-based filtering and analysis. Table is partitioned by this field.
+
+      - name: session_end_at
+        tests: [not_null]
+        description: >
+          [Definition] Timestamp when the session ended.
+          [Formula] MAX(event_at) within the session grouping.
+          [Context] Used to calculate session duration and identify session boundaries.
+
+      - name: session_duration_seconds
+        description: >
+          [Definition] Length of the session in seconds.
+          [Formula] DATEDIFF(session_end_at, session_start_at, 'second').
+          [Context] Single-event sessions have duration of 0. Longer durations indicate sustained engagement.
+
+      - name: events_in_session
+        description: >
+          [Definition] Number of events that occurred in this session.
+          [Formula] COUNT(*) within the session grouping.
+          [Context] Higher counts indicate more intensive usage. Power users have more events per session.
 
   - name: dim_accounts
     description: >
