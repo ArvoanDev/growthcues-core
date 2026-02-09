@@ -223,6 +223,67 @@ models:
           [Formula] COUNT(DISTINCT activity_date) where activity_date > metric_date - 30 days.
           [Context] Frequency indicator. Used in stickiness ratio calculation.
 
+      # --- SESSION METRICS ---
+      - name: n_sessions_daily
+        description: >
+          [Definition] Number of sessions on this date.
+          [Formula] COUNT(*) from fct_sessions where session_start_at date = metric_date.
+          [Context] Measures daily session volume for the account.
+
+      - name: time_on_platform_minutes_daily
+        description: >
+          [Definition] Total time spent on platform on this date in minutes.
+          [Formula] SUM(session_duration_seconds) / 60 where session_start_at date = metric_date.
+          [Context] Measures daily engagement depth. Higher values indicate more time invested.
+
+      - name: n_sessions_7d
+        description: >
+          [Definition] Total sessions in last 7 days.
+          [Formula] COUNT(*) from fct_sessions where session_start_at date > metric_date - 7 days.
+          [Context] Short-term session frequency indicator.
+
+      - name: time_on_platform_minutes_7d
+        description: >
+          [Definition] Total time on platform in last 7 days in minutes.
+          [Formula] SUM(session_duration_seconds) / 60 over 7 day window.
+          [Context] Weekly engagement depth. Useful for detecting usage drops.
+
+      - name: n_sessions_30d
+        description: >
+          [Definition] Total sessions in last 30 days.
+          [Formula] COUNT(*) from fct_sessions where session_start_at date > metric_date - 30 days.
+          [Context] Monthly session frequency. Power accounts have higher values.
+
+      - name: time_on_platform_minutes_30d
+        description: >
+          [Definition] Total time on platform in last 30 days in minutes.
+          [Formula] SUM(session_duration_seconds) / 60 over 30 day window.
+          [Context] Monthly engagement depth. Key indicator of product stickiness.
+
+      - name: avg_daily_sessions_7d
+        description: >
+          [Definition] Average sessions per active day (7-day window).
+          [Formula] n_sessions_7d / active_days_7d.
+          [Context] Measures session intensity. Multiple sessions per day indicates high engagement.
+
+      - name: avg_daily_sessions_30d
+        description: >
+          [Definition] Average sessions per active day (30-day window).
+          [Formula] n_sessions_30d / active_days_30d.
+          [Context] Measures sustained session intensity over monthly period.
+
+      - name: avg_daily_time_on_platform_minutes_7d
+        description: >
+          [Definition] Average time on platform per active day in minutes (7-day window).
+          [Formula] time_on_platform_minutes_7d / active_days_7d.
+          [Context] Daily engagement intensity. Higher values indicate deeper product usage.
+
+      - name: avg_daily_time_on_platform_minutes_30d
+        description: >
+          [Definition] Average time on platform per active day in minutes (30-day window).
+          [Formula] time_on_platform_minutes_30d / active_days_30d.
+          [Context] Sustained daily engagement depth over monthly period.
+
       # --- FLAGS ---
       - name: is_active_daily
         description: >
@@ -456,6 +517,13 @@ models:
           [Definition] Unique User ID.
           [Formula] From stg_segment_tracks.
           [Context] Links sessions back to individual users.
+
+      - name: account_id
+        tests: [not_null]
+        description: >
+          [Definition] Unique Account ID.
+          [Formula] From stg_segment_tracks.
+          [Context] Links sessions to accounts/companies. Used for account-level session aggregation.
 
       - name: session_start_at
         tests: [not_null]

@@ -32,7 +32,7 @@ It produces six critical tables in your warehouse:
 
 - **Warehouse Native:** Runs entirely on Snowflake or BigQuery. No data leaves your infrastructure.
 
-- **B2B Standard:** Compatible out-of-the-box with Segment and Rudderstack using the **Segment B2B SaaS spec** (requires `context_group_id` in tracks table for account identification).
+- **B2B Standard:** Compatible out-of-the-box with Segment and Rudderstack using the **Segment B2B SaaS spec**. Requires `context_group_id` in tracks table for account identification; however, you can customize this field in `dbt_project.yml` if your implementation differs.
 
 - **B2B SaaS Granularity:** Calculates metrics at the Global (Product), Account (Customer), and User (Person) levels.
 
@@ -51,7 +51,7 @@ Before you begin, ensure you have:
   - `tracks` table with `context_group_id` field (containing the account/group ID)
   - `users` table (identify calls)
   - `groups` table (group/account identify calls)
-  - **Note:** This project assumes the B2B SaaS data model where account context is passed via `context_group_id` in event tracking
+  - **Note:** This project assumes the B2B SaaS data model where account context is passed via `context_group_id` in event tracking. If your implementation uses a different field for account IDs, you can customize this in `dbt_project.yml`.
 
 ### Step 1: Install Python (if not already installed)
 
@@ -447,18 +447,19 @@ _Source: `fct_product_metrics_daily`_
 
 _Source: `fct_account_metrics_daily`_
 
-| Metric                      | Definition                                                        | PLG Use Case                                     |
-| :-------------------------- | :---------------------------------------------------------------- | :----------------------------------------------- |
-| **Account DAU / WAU / MAU** | Active users within this specific account (daily/weekly/monthly). | Measuring per-account seat utilization.          |
-| **Daily Event Volume**      | Total events performed by this account today.                     | Tracking engagement intensity.                   |
-| **Feature Breadth**         | Count of unique event types used in last 30 days.                 | Measuring product depth and sophistication.      |
-| **Active Days (7d/30d)**    | Number of days the account was active.                            | Frequency indicator for engagement patterns.     |
-| **Account Stickiness**      | Ratio of active_days_7d / active_days_30d.                        | Measuring usage consistency and habit formation. |
-| **User Stickiness**         | Ratio of DAU / MAU _within_ that account.                         | Measuring user depth and engagement quality.     |
-| **Dormant Risk**            | Active in last 30 days, but 0 events in last 7 days.              | Early warning for proactive churn prevention.    |
-| **Net New Users (7d)**      | Weekly seat velocity (change in active seats).                    | Expansion signals for upsell opportunities.      |
-| **Volume Change Ratio**     | Event volume trend (last 7d vs prior 7d).                         | Churn warning when usage is declining.           |
-| **Velocity Trends**         | 7, 14, and 30-day trends for DAU/WAU/MAU.                         | Account growth momentum tracking.                |
+| Metric                      | Definition                                                              | PLG Use Case                                               |
+| :-------------------------- | :---------------------------------------------------------------------- | :--------------------------------------------------------- |
+| **Account DAU / WAU / MAU** | Active users within this specific account (daily/weekly/monthly).       | Measuring per-account seat utilization.                    |
+| **Daily Event Volume**      | Total events performed by this account today.                           | Tracking engagement intensity.                             |
+| **Session Metrics**         | Sessions per day/7d/30d, time on platform, average daily sessions/time. | Understanding account engagement depth and usage patterns. |
+| **Feature Breadth**         | Count of unique event types used in last 30 days.                       | Measuring product depth and sophistication.                |
+| **Active Days (7d/30d)**    | Number of days the account was active.                                  | Frequency indicator for engagement patterns.               |
+| **Account Stickiness**      | Ratio of active_days_7d / active_days_30d.                              | Measuring usage consistency and habit formation.           |
+| **User Stickiness**         | Ratio of DAU / MAU _within_ that account.                               | Measuring user depth and engagement quality.               |
+| **Dormant Risk**            | Active in last 30 days, but 0 events in last 7 days.                    | Early warning for proactive churn prevention.              |
+| **Net New Users (7d)**      | Weekly seat velocity (change in active seats).                          | Expansion signals for upsell opportunities.                |
+| **Volume Change Ratio**     | Event volume trend (last 7d vs prior 7d).                               | Churn warning when usage is declining.                     |
+| **Velocity Trends**         | 7, 14, and 30-day trends for DAU/WAU/MAU.                               | Account growth momentum tracking.                          |
 
 ### User Level (Per Person)
 

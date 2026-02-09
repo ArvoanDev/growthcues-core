@@ -7,6 +7,7 @@
 WITH tracks_session_flags AS (
     SELECT
         user_id,
+        account_id,
         event_at as occurred_at,
         -- Generate a session flag: 1 if new session, 0 if same session
         CASE
@@ -34,9 +35,10 @@ session_grouping AS (
 SELECT
     {{ dbt_utils.generate_surrogate_key(['user_id', 'user_session_index']) }} as session_id,
     user_id,
+    account_id,
     MIN(occurred_at) as session_start_at,
     MAX(occurred_at) as session_end_at,
     {{ dbt.datediff('MIN(occurred_at)', 'MAX(occurred_at)', 'second') }} as session_duration_seconds,
     COUNT(*) as events_in_session
 FROM session_grouping
-GROUP BY 1, 2
+GROUP BY 1, 2, 3

@@ -45,6 +45,21 @@ These definitions are compatible with the GrowthCues "AI-Ready" standard, optimi
 | **`active_days_7d`**             | Integer | **7-Day Frequency.** Number of days active in last 7 days.        | 5-7 days = highly engaged account.       |
 | **`active_days_30d`**            | Integer | **30-Day Frequency.** Number of days active in last 30 days.      | Used in stickiness ratio calculation.    |
 
+### Session Metrics
+
+| Column Name                                  | Type    | Definition                                                                  | Context                                   |
+| :------------------------------------------- | :------ | :-------------------------------------------------------------------------- | :---------------------------------------- |
+| **`n_sessions_daily`**                       | Integer | **Daily Sessions.** Number of sessions on this date.                        | Daily session volume.                     |
+| **`time_on_platform_minutes_daily`**         | Float   | **Daily Time.** Total time on platform on this date in minutes.             | Daily engagement depth.                   |
+| **`n_sessions_7d`**                          | Integer | **7-Day Sessions.** Total sessions in last 7 days.                          | Short-term session frequency.             |
+| **`time_on_platform_minutes_7d`**            | Float   | **7-Day Time.** Total time on platform in last 7 days in minutes.           | Weekly engagement depth.                  |
+| **`n_sessions_30d`**                         | Integer | **30-Day Sessions.** Total sessions in last 30 days.                        | Monthly session frequency.                |
+| **`time_on_platform_minutes_30d`**           | Float   | **30-Day Time.** Total time on platform in last 30 days in minutes.         | Monthly engagement depth.                 |
+| **`avg_daily_sessions_7d`**                  | Float   | **Avg Daily Sessions (7d).** Average sessions per active day (7d window).   | Session intensity. >1 = multiple per day. |
+| **`avg_daily_sessions_30d`**                 | Float   | **Avg Daily Sessions (30d).** Average sessions per active day (30d window). | Sustained session intensity.              |
+| **`avg_daily_time_on_platform_minutes_7d`**  | Float   | **Avg Daily Time (7d).** Average time per active day in minutes (7d).       | Daily engagement intensity.               |
+| **`avg_daily_time_on_platform_minutes_30d`** | Float   | **Avg Daily Time (30d).** Average time per active day in minutes (30d).     | Sustained daily engagement depth.         |
+
 ### Flags & Ratios
 
 | Column Name                    | Type  | Definition                                               | Context                                       |
@@ -119,6 +134,7 @@ _Formula: `(Current - Lagged) / Days`. Represents average net daily growth for t
 | :----------------------------- | :-------- | :-------------------------------- | :----------------------------------------------------- |
 | **`session_id`**               | String    | Unique session identifier.        | Primary key for the sessions table.                    |
 | **`user_id`**                  | String    | User who performed the session.   | Links sessions back to users.                          |
+| **`account_id`**               | String    | Account the session belongs to.   | Links sessions to accounts/companies.                  |
 | **`session_start_at`**         | Timestamp | When the session started.         | Table partitioned by this field.                       |
 | **`session_end_at`**           | Timestamp | When the session ended.           | Used to calculate duration.                            |
 | **`session_duration_seconds`** | Integer   | Length of session in seconds.     | Single-event sessions = 0. Longer = deeper engagement. |

@@ -10,7 +10,7 @@ renamed as (
     user_id,
     -- Segment stores the Account ID in 'context_group_id'
     -- We cast to string to ensure consistency across warehouses
-    cast(context_group_id as {{ dbt.type_string() }}) as account_id,
+    cast({{ var('group_id') }} as {{ dbt.type_string() }}) as account_id,
     event as event_name,
     -- Handle timestamp normalization. You can e.g., prefer 'original_timestamp' as it reflects the client-side time
     coalesce(timestamp, timestamp) as event_at,

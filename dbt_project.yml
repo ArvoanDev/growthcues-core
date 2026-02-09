@@ -17,7 +17,8 @@ clean-targets: # directories to be removed by 'dbt clean'
   - "dbt_packages"
 
 vars:
-  session_timeout_minutes: 30
+  session_timeout_minutes: 30 # Session timeout duration in minutes
+  group_id: "context_group_id" # Group ID (account_id) field in Segment data; by default, Segment stores this in 'context_group_id' if following standard conventions (B2B Spec)
 
 models:
   growthcues_core:

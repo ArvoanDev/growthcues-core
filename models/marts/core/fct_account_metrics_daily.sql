@@ -19,14 +19,11 @@ daily_activity_granularity as (
 daily_sessions as (
     select
         cast(session_start_at as date) as session_date,
-        s.account_id,
+        account_id,
         count(*) as n_sessions,
-        sum(s.session_duration_seconds) as total_session_time_seconds
-    from {{ ref('fct_sessions') }} s
-    inner join {{ ref('stg_segment_tracks') }} t
-        on s.user_id = t.user_id
-        and s.session_start_at = t.event_at
-    where s.account_id is not null
+        sum(session_duration_seconds) as total_session_time_seconds
+    from {{ ref('fct_sessions') }}
+    where account_id is not null
     group by 1, 2
 ),
 
