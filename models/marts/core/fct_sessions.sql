@@ -7,10 +7,10 @@
 WITH tracks_session_flags AS (
     SELECT
         user_id,
-        timestamp as occurred_at,
+        event_at as occurred_at,
         -- Generate a session flag: 1 if new session, 0 if same session
         CASE
-            WHEN {{ dbt.datediff('LAG(timestamp) OVER (PARTITION BY user_id ORDER BY timestamp)', 'timestamp', 'minute') }} > {{ var('session_timeout_minutes', 30) }} 
+            WHEN {{ dbt.datediff('LAG(event_at) OVER (PARTITION BY user_id ORDER BY event_at)', 'event_at', 'minute') }} > {{ var('session_timeout_minutes', 30) }} 
             THEN 1
             ELSE 0 
         END AS is_new_session_flag
@@ -19,7 +19,7 @@ WITH tracks_session_flags AS (
     -- Only process new data to save costs
     -- Lookback from last session end to catch sessions that might still be active
     -- This prevents splitting sessions across incremental runs
-    WHERE timestamp >= (SELECT {{ dbt.dateadd('minute', -var('session_timeout_minutes', 30), 'MAX(session_end_at)') }} FROM {{ this }})
+    WHERE event_at >= (SELECT {{ dbt.dateadd('minute', -var('session_timeout_minutes', 30), 'MAX(session_end_at)') }} FROM {{ this }})
     {% endif %}
 ),
 
