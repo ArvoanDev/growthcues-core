@@ -1,0 +1,9 @@
+id,user_id,anonymous_id,context_group_id,url,title,timestamp,received_at,sent_at
+page_001,user_001,anon_001,account_001,/dashboard,Dashboard,2024-01-01 09:05:00,2024-01-01 09:05:01,2024-01-01 09:05:00
+page_002,user_001,anon_001,account_001,/reports,Reports,2024-01-01 09:12:00,2024-01-01 09:12:01,2024-01-01 09:12:00
+page_003,,anon_003,,/,Home,2024-01-01 08:00:00,2024-01-01 08:00:01,2024-01-01 08:00:00
+page_004,,anon_003,,/signup,Sign Up,2024-01-01 08:03:00,2024-01-01 08:03:01,2024-01-01 08:03:00
+page_005,user_002,anon_002,account_001,/settings,Settings,2024-01-01 10:00:00,2024-01-01 10:00:01,2024-01-01 10:00:00
+page_006,user_003,anon_004,account_002,/dashboard,Dashboard,2024-01-02 11:00:00,2024-01-02 11:00:01,2024-01-02 11:00:00
+page_007,user_003,anon_004,account_002,/projects,Projects,2024-01-02 11:05:00,2024-01-02 11:05:01,2024-01-02 11:05:00
+page_008,user_004,anon_005,account_002,/dashboard,Dashboard,2024-01-02 15:05:00,2024-01-02 15:05:01,2024-01-02 15:05:00

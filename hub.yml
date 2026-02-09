@@ -1,0 +1,10 @@
+name: growthcues_core
+namespace: growthcues
+description: "The Open Source Semantic Layer for B2B SaaS - Account-level and Product-level metrics from Segment/Rudderstack data"
+version: 1.0.0
+author: GrowthCues
+author-website: https://growthcues.com
+license: MIT
+require-dbt-version: [">=1.0.0", "<2.0.0"]
+supported-databases: [snowflake, bigquery]
+tags: [b2b, saas, product-analytics, segment, rudderstack, metrics, plg, growth]

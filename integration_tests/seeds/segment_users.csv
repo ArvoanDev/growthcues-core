@@ -1,0 +1,5 @@
+id,user_id,email,created_at,context_group_id,received_at,sent_at
+user_001,user_001,alice@acme.com,2023-12-01 00:00:00,account_001,2023-12-01 00:00:01,2023-12-01 00:00:00
+user_002,user_002,bob@acme.com,2023-12-15 00:00:00,account_001,2023-12-15 00:00:01,2023-12-15 00:00:00
+user_003,user_003,charlie@techcorp.com,2024-01-01 00:00:00,account_002,2024-01-01 00:00:01,2024-01-01 00:00:00
+user_004,user_004,diana@techcorp.com,2024-01-02 00:00:00,account_002,2024-01-02 00:00:01,2024-01-02 00:00:00

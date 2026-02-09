@@ -2,16 +2,23 @@ version: 2
 
 sources:
   - name: segment
-    # Update this schema to match where your raw data lives (e.g., 'segment_events', 'rudderstack_production')
-    schema: large_events10
+    # Database and schema are now configurable via dbt_project.yml variables
+    # Users can override these in their own dbt_project.yml when installing as a package
+    database: "{{ var('segment_database', target.database) }}"
+    schema: "{{ var('segment_schema', 'segment_events') }}"
     tables:
       - name: tracks
+        identifier: "{{ var('segment_tracks_table', 'tracks') }}"
         description: Raw event stream from Segment/Rudderstack.
       - name: pages
+        identifier: "{{ var('segment_pages_table', 'pages') }}"
         description: Raw page view calls from Segment/Rudderstack.
       - name: identifies
+        identifier: "{{ var('segment_identifies_table', 'identifies') }}"
         description: Raw identify calls linking anonymous_id to user_id.
       - name: users
+        identifier: "{{ var('segment_users_table', 'users') }}"
         description: Raw user identify calls.
       - name: groups
+        identifier: "{{ var('segment_groups_table', 'groups') }}"
         description: Raw group (account) identify calls.

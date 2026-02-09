@@ -9,4 +9,4 @@ __pycache__/
 .ipynb_checkpoints/
 .vscode/
 .env
-.env.*
+.env.*integration_tests/profiles.yml

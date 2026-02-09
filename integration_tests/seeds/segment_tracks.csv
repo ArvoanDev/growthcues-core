@@ -1,0 +1,21 @@
+id,user_id,anonymous_id,context_group_id,event,event_text,timestamp,received_at,sent_at
+track_001,user_001,anon_001,account_001,Button Clicked,Login Button,2024-01-01 09:00:00,2024-01-01 09:00:01,2024-01-01 09:00:00
+track_002,user_001,anon_001,account_001,Page Viewed,Dashboard,2024-01-01 09:05:00,2024-01-01 09:05:01,2024-01-01 09:05:00
+track_003,user_001,anon_001,account_001,Feature Used,Export CSV,2024-01-01 09:10:00,2024-01-01 09:10:01,2024-01-01 09:10:00
+track_004,user_001,anon_001,account_001,Feature Used,Create Report,2024-01-01 09:15:00,2024-01-01 09:15:01,2024-01-01 09:15:00
+track_005,user_002,anon_002,account_001,Button Clicked,Settings,2024-01-01 10:00:00,2024-01-01 10:00:01,2024-01-01 10:00:00
+track_006,user_002,anon_002,account_001,Feature Used,Update Profile,2024-01-01 10:05:00,2024-01-01 10:05:01,2024-01-01 10:05:00
+track_007,user_001,anon_001,account_001,Button Clicked,Logout,2024-01-01 14:00:00,2024-01-01 14:00:01,2024-01-01 14:00:00
+track_008,,anon_003,,Page Viewed,Landing Page,2024-01-01 08:00:00,2024-01-01 08:00:01,2024-01-01 08:00:00
+track_009,,anon_003,,Button Clicked,Sign Up,2024-01-01 08:05:00,2024-01-01 08:05:01,2024-01-01 08:05:00
+track_010,user_001,anon_003,account_001,Feature Used,Dashboard View,2024-01-01 08:35:00,2024-01-01 08:35:01,2024-01-01 08:35:00
+track_011,user_003,anon_004,account_002,Button Clicked,Login Button,2024-01-02 11:00:00,2024-01-02 11:00:01,2024-01-02 11:00:00
+track_012,user_003,anon_004,account_002,Feature Used,Create Project,2024-01-02 11:10:00,2024-01-02 11:10:01,2024-01-02 11:10:00
+track_013,user_003,anon_004,account_002,Feature Used,Invite User,2024-01-02 11:20:00,2024-01-02 11:20:01,2024-01-02 11:20:00
+track_014,user_004,anon_005,account_002,Button Clicked,Accept Invite,2024-01-02 15:00:00,2024-01-02 15:00:01,2024-01-02 15:00:00
+track_015,user_004,anon_005,account_002,Page Viewed,Dashboard,2024-01-02 15:05:00,2024-01-02 15:05:01,2024-01-02 15:05:00
+track_016,user_001,anon_001,account_001,Feature Used,API Call,2024-01-03 10:00:00,2024-01-03 10:00:01,2024-01-03 10:00:00
+track_017,user_001,anon_001,account_001,Feature Used,Webhook Setup,2024-01-03 10:15:00,2024-01-03 10:15:01,2024-01-03 10:15:00
+track_018,user_002,anon_002,account_001,Feature Used,Integration Enabled,2024-01-03 11:00:00,2024-01-03 11:00:01,2024-01-03 11:00:00
+track_019,user_001,anon_001,account_001,Button Clicked,Upgrade Plan,2024-01-07 09:00:00,2024-01-07 09:00:01,2024-01-07 09:00:00
+track_020,user_001,anon_001,account_001,Feature Used,Advanced Analytics,2024-01-07 09:30:00,2024-01-07 09:30:01,2024-01-07 09:30:00

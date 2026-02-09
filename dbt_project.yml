@@ -17,14 +17,30 @@ clean-targets: # directories to be removed by 'dbt clean'
   - "dbt_packages"
 
 vars:
+  # Session configuration
   session_timeout_minutes: 30 # Session timeout duration in minutes
-  group_id: "context_group_id" # Group ID (account_id) field in Segment data; by default, Segment stores this in 'context_group_id' if following standard conventions (B2B Spec)
+  include_pages_in_sessions: false # Set to true to include page views in session calculation
+
+  # Identity stitching configuration
   enable_identity_stitching: false # Set to false to disable identity stitching (if you don't have anonymous users or identifies table)
   identity_anonymous_id_field: "anonymousId" # Field name for anonymous ID in identity stitching; e.g., anonymousId (Segment default), visitor_id, device_id
   identity_lookback_days: 365 # Number of days to look back for identity resolution data
+
+  # Data lookback windows
   tracks_lookback_days: 365 # Number of days to look back for tracks/events data
   pages_lookback_days: 365 # Number of days to look back for pages data
-  include_pages_in_sessions: false # Set to true to include page views in session calculation
+
+  # Account/Group ID field mapping
+  group_id: "context_group_id" # Group ID (account_id) field in Segment data; by default, Segment stores this in 'context_group_id' if following standard conventions (B2B Spec)
+
+  # Source configuration (override these in your dbt_project.yml when using as a package)
+  # segment_database: "YOUR_DATABASE"  # Defaults to target.database if not specified
+  # segment_schema: "YOUR_SEGMENT_SCHEMA"  # e.g., "segment_production", "rudderstack_events"
+  # segment_tracks_table: "tracks"  # Override if your tracks table has a different name
+  # segment_pages_table: "pages"  # Override if your pages table has a different name
+  # segment_identifies_table: "identifies"  # Override if your identifies table has a different name
+  # segment_users_table: "users"  # Override if your users table has a different name
+  # segment_groups_table: "groups"  # Override if your groups table has a different name
 
 models:
   growthcues_core:

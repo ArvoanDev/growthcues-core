@@ -1,0 +1,63 @@
+name: "growthcues_core_integration_tests"
+version: "1.0.0"
+config-version: 2
+
+profile: "integration_tests"
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+
+vars:
+  # Point to seed data instead of real sources
+  # For integration tests, seeds are in the target schema, so use that
+  segment_schema: "growthcues_dataset" # Change this to match your profiles.yml dataset name
+  segment_tracks_table: "segment_tracks"
+  segment_pages_table: "segment_pages"
+  segment_identifies_table: "segment_identifies"
+  segment_users_table: "segment_users"
+  segment_groups_table: "segment_groups"
+
+  # Enable identity stitching for tests
+  enable_identity_stitching: true
+  identity_anonymous_id_field: "anonymous_id"
+
+  # Use shorter lookback windows for test performance
+  identity_lookback_days: 30
+  tracks_lookback_days: 30
+  pages_lookback_days: 30
+
+seeds:
+  growthcues_core_integration_tests:
+    +quote_columns: false
+    segment_tracks:
+      +column_types:
+        timestamp: timestamp
+        received_at: timestamp
+        sent_at: timestamp
+    segment_pages:
+      +column_types:
+        timestamp: timestamp
+        received_at: timestamp
+        sent_at: timestamp
+    segment_identifies:
+      +column_types:
+        timestamp: timestamp
+        received_at: timestamp
+        sent_at: timestamp
+    segment_users:
+      +column_types:
+        created_at: timestamp
+        received_at: timestamp
+        sent_at: timestamp
+    segment_groups:
+      +column_types:
+        created_at: timestamp
+        received_at: timestamp
+        sent_at: timestamp
+
+models:
+  growthcues_core:
+    +persist_docs:
+      relation: true
+      columns: true

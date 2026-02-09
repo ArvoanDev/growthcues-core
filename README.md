@@ -44,11 +44,16 @@ It produces six critical tables in your warehouse:
 
 ## 🛠 Quick Start
 
+Choose your installation method based on your needs:
+
+- **Method 1 (Recommended):** Install as a **dbt Package** - Get automatic updates and easy version management
+- **Method 2:** Clone as a **Template** - Full control to customize SQL directly
+
 ### Prerequisites
 
 Before you begin, ensure you have:
 
-- dbt Core (v1.0+) or dbt Cloud.
+- dbt Core (v1.0+) or dbt Cloud
 - **Python 3.10 or higher** installed on your computer
 - Access to a **Snowflake** or **BigQuery** warehouse with appropriate permissions
 - Raw data from **Segment** or **Rudderstack** loaded into your warehouse following the **Segment B2B SaaS spec**:
@@ -56,6 +61,105 @@ Before you begin, ensure you have:
   - `users` table (identify calls)
   - `groups` table (group/account identify calls)
   - **Note:** This project assumes the B2B SaaS data model where account context is passed via `context_group_id` in event tracking. If your implementation uses a different field for account IDs, you can customize this in `dbt_project.yml`.
+
+---
+
+## 📦 Installation Method 1: dbt Package (Recommended)
+
+Install GrowthCues Core as a package in your existing dbt project. This method gives you automatic updates and clean separation between your code and the package code.
+
+### Step 1: Add to packages.yml
+
+In your dbt project root, create or edit `packages.yml`:
+
+```yaml
+packages:
+  - package: growthcues/growthcues_core
+    version: 1.0.0
+```
+
+### Step 2: Install the package
+
+```bash
+dbt deps
+```
+
+This downloads the package into `dbt_packages/growthcues_core/` (do not edit files in this folder).
+
+### Step 3: Configure sources in your dbt_project.yml
+
+Add these variables to your `dbt_project.yml` to point to your Segment/Rudderstack data:
+
+```yaml
+vars:
+  growthcues_core:
+    # Required: Point to your Segment data location
+    segment_database: "YOUR_DATABASE" # e.g., "ANALYTICS" (Snowflake) or your project ID (BigQuery)
+    segment_schema: "YOUR_SEGMENT_SCHEMA" # e.g., "segment_production", "rudderstack_events"
+
+
+    # Optional: Override table names if they differ
+    # segment_tracks_table: "tracks"
+    # segment_pages_table: "pages"
+    # segment_identifies_table: "identifies"
+    # segment_users_table: "users"
+    # segment_groups_table: "groups"
+
+    # Optional: Customize behavior
+    # session_timeout_minutes: 30
+    # include_pages_in_sessions: false
+    # enable_identity_stitching: true
+```
+
+**Example for Snowflake:**
+
+```yaml
+vars:
+  growthcues_core:
+    segment_database: "ANALYTICS"
+    segment_schema: "segment_production"
+```
+
+**Example for BigQuery:**
+
+```yaml
+vars:
+  growthcues_core:
+    segment_database: "my-company-analytics" # Your GCP project ID
+    segment_schema: "segment_events"
+```
+
+### Step 4: Run the models
+
+```bash
+# Run all GrowthCues Core models
+dbt run --models growthcues_core
+
+# Or run specific models
+dbt run --models growthcues_core.fct_product_metrics_daily
+```
+
+### Step 5: Query your metrics
+
+The package creates six tables in your target schema:
+
+```sql
+-- Snowflake
+SELECT * FROM YOUR_SCHEMA.fct_product_metrics_daily LIMIT 10;
+
+-- BigQuery
+SELECT * FROM `YOUR_PROJECT.YOUR_DATASET.fct_product_metrics_daily` LIMIT 10;
+```
+
+**That's it!** You now have all six metrics tables available. To update to a new version, just change the version in `packages.yml` and run `dbt deps` again.
+
+---
+
+## 🔧 Installation Method 2: Template/Clone
+
+Use this method if you need to customize the SQL directly or want full control over the code.
+
+### Prerequisites (same as above)
 
 ### Step 1: Install Python (if not already installed)
 
@@ -257,38 +361,50 @@ You should see green checkmarks (✓) for all connection tests. If you see error
 
 ### Step 6: Configure Your Data Sources
 
-Open `models/staging/sources.yml` in a text editor and update it to point to where your Segment/Rudderstack data lives:
-
-**For Snowflake:**
+You can now configure data sources using variables in your `dbt_project.yml`:
 
 ```yaml
-sources:
-  - name: segment
-    database: YOUR_RAW_DATABASE # e.g., RAW_DATA
-    schema: YOUR_SEGMENT_SCHEMA # e.g., SEGMENT_PRODUCTION
-    tables:
-      - name: tracks
-      - name: users
-      - name: groups
+vars:
+  # Required: Point to your Segment data location
+  segment_database: "YOUR_RAW_DATABASE" # e.g., "RAW_DATA" (Snowflake) or your project ID (BigQuery)
+  segment_schema: "YOUR_SEGMENT_SCHEMA" # e.g., "segment_production", "rudderstack_events"
+
+
+  # Optional: Override table names if they differ
+  # segment_tracks_table: "tracks"
+  # segment_pages_table: "pages"
+  # segment_identifies_table: "identifies"
+  # segment_users_table: "users"
+  # segment_groups_table: "groups"
+
+  # Optional: Customize behavior
+  # session_timeout_minutes: 30
+  # include_pages_in_sessions: false
+  # enable_identity_stitching: true
 ```
 
-**For BigQuery:**
+**For Snowflake example:**
 
 ```yaml
-sources:
-  - name: segment
-    database: YOUR_GCP_PROJECT_ID # e.g., my-company-analytics
-    schema: YOUR_SEGMENT_DATASET # e.g., segment_production
-    tables:
-      - name: tracks
-      - name: users
-      - name: groups
+vars:
+  segment_database: "RAW_DATA"
+  segment_schema: "SEGMENT_PRODUCTION"
+```
+
+**For BigQuery example:**
+
+```yaml
+vars:
+  segment_database: "my-company-analytics" # Your GCP project ID
+  segment_schema: "segment_events"
 ```
 
 **How to find where your Segment data is:**
 
 - **Snowflake:** Log into Snowflake → Databases → Look for your Segment database/schema
 - **BigQuery:** Log into BigQuery Console → Look for your Segment dataset
+
+**Note:** The `models/staging/sources.yml` file now uses these variables automatically, so you don't need to edit it directly.
 
 ### Step 7: Install Project Dependencies
 
@@ -385,6 +501,51 @@ To keep your metrics up-to-date, you can:
 
 ---
 
+## ❓ Frequently Asked Questions
+
+**Why isn't this on dbt Hub yet?**
+
+We're preparing for dbt Hub publication! This project now supports **both installation methods**:
+
+1. **Package installation** (via `packages.yml`) - recommended for most users who want easy updates
+2. **Template/clone** - for users who need full control to customize the SQL
+
+While we finalize our dbt Hub submission (integration tests, CI/CD, etc.), you can install it as a package using the Git method:
+
+```yaml
+packages:
+  - git: "https://github.com/growthcues/growthcues-core.git"
+    revision: main
+```
+
+Once published on dbt Hub, you'll be able to use:
+
+```yaml
+packages:
+  - package: growthcues/growthcues_core
+    version: 1.0.0
+```
+
+**Which installation method should I use?**
+
+- **Use Package (Method 1)** if you want:
+  - Easy updates via `dbt deps`
+  - Clean separation between your code and package code
+  - Standard dbt package management
+- **Use Template/Clone (Method 2)** if you want:
+  - Full control to modify the SQL directly
+  - Custom business logic that requires deep changes
+  - To fork and maintain your own version
+
+**Can I switch between installation methods later?**
+
+Yes, but it requires some migration:
+
+- From Template → Package: Remove the cloned files, add to `packages.yml`, move variables to your `dbt_project.yml`
+- From Package → Template: Clone the repo, remove from `packages.yml`, customize as needed
+
+---
+
 ## 🔧 Troubleshooting
 
 **"dbt command not found"**
@@ -399,7 +560,7 @@ To keep your metrics up-to-date, you can:
 
 **"Database/Schema does not exist"**
 
-- Verify the database and schema names in `models/staging/sources.yml`
+- Verify the database and schema names in your `dbt_project.yml` variables
 - Make sure your user has access to read from those locations
 
 **"Insufficient privileges"**
@@ -411,13 +572,14 @@ To keep your metrics up-to-date, you can:
 
 - Confirm Segment/Rudderstack is successfully loading data into your warehouse
 - Check the exact table names - they might have prefixes or be in a different schema
+- Verify your `segment_database` and `segment_schema` variables are correct
 
 **"Missing context_group_id or account_id is always null"**
 
 - This project requires the Segment B2B SaaS spec where account IDs are passed as `context_group_id`
 - Verify your Segment implementation uses `analytics.group()` calls to set the group context
 - Check that your tracking calls include the group context: `analytics.track(event, {}, {groupId: 'account_123'})`
-- If using a different field name for account ID, you'll need to modify `models/staging/stg_segment_tracks.sql`
+- You can customize the field name using the `group_id` variable in `dbt_project.yml`
 
 ## 🤖 The "AI-Ready" Advantage
 
