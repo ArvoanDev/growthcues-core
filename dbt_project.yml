@@ -23,6 +23,8 @@ vars:
   identity_anonymous_id_field: "anonymousId" # Field name for anonymous ID in identity stitching; e.g., anonymousId (Segment default), visitor_id, device_id
   identity_lookback_days: 365 # Number of days to look back for identity resolution data
   tracks_lookback_days: 365 # Number of days to look back for tracks/events data
+  pages_lookback_days: 365 # Number of days to look back for pages data
+  include_pages_in_sessions: false # Set to true to include page views in session calculation
 
 models:
   growthcues_core:

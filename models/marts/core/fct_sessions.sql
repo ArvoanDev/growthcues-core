@@ -4,6 +4,8 @@
     partition_by={'field': 'session_start_at', 'data_type': 'timestamp'}
 ) }}
 
+{%- set include_pages = var('include_pages_in_sessions', true) -%}
+
 WITH tracks AS (
     SELECT
         user_id,
@@ -15,6 +17,7 @@ WITH tracks AS (
     {% endif %}
 ),
 
+{% if include_pages %}
 pages AS (
     SELECT
         user_id,
@@ -31,6 +34,11 @@ combined_events AS (
     UNION ALL
     SELECT * FROM pages
 ),
+{% else %}
+combined_events AS (
+    SELECT * FROM tracks
+),
+{% endif %}
 
 tracks_session_flags AS (
     SELECT
