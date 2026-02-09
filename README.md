@@ -10,7 +10,7 @@ A dbt project to calculate **Account-Level** and **Product-Level** metrics from 
 
 **GrowthCues Core** is an open-source dbt project that acts as the foundational semantic layer for Product-Led Growth (PLG) teams in B2B SaaS organizations.
 
-👉 For a tutorial on how to use this for self-serve GTM analytics with Claude MCP, read: [The Zero-Context Dashboard](https://growthcues.com/blog/self-serve-analytics-claude-mcp/).
+👉 For a tutorial on how to use this for self-serve GTM analytics, read: [Building Self-Serve GTM Analytics with Claude, BigQuery, dbt, and MCP](https://growthcues.com/blog/self-serve-analytics-claude-mcp/).
 
 Most analytics tools focus only on Users. B2B businesses need to track **Accounts**. This project handles both.
 
@@ -497,6 +497,7 @@ _Sources: `dim_accounts` and `dim_users`_
 | **dim_users**    | User ID, first/last seen timestamps, lifetime accounts, latest account, days since first/last seen.       | Master user reference for joins, understanding user tenure and account associations. |
 
 _See `METRICS.md` for full definitions._
+
 ## 🔗 How Identity Stitching Works
 
 Identity stitching is the process of linking anonymous visitor activity to known user identities. This is critical for B2B SaaS because it allows you to attribute pre-signup behavior (product exploration, free tier usage) to the accounts that eventually convert.
@@ -514,11 +515,13 @@ Identity stitching is the process of linking anonymous visitor activity to known
 ### Why This Matters for B2B SaaS
 
 Without identity stitching:
+
 - You lose visibility into the pre-signup journey
 - Product analytics show artificially low engagement (missing anonymous events)
 - Attribution is broken (can't connect early interest signals to converted accounts)
 
 With identity stitching:
+
 - Complete customer journey from first touch to conversion
 - Accurate product engagement metrics including trial/free tier activity
 - Better predictive models (more complete behavioral history)
@@ -558,7 +561,7 @@ FROM (
         anonymous_id,
         user_id,
         ROW_NUMBER() OVER (
-            PARTITION BY anonymous_id 
+            PARTITION BY anonymous_id
             ORDER BY timestamp DESC
         ) AS rn
     FROM identifies
@@ -586,6 +589,7 @@ LEFT JOIN stg_identity_resolution AS identity_map
 ```
 
 **Logic:**
+
 - If event already has `user_id` → keep it (user was authenticated)
 - If event only has `anonymous_id` → lookup `master_user_id` from identity graph
 - If no mapping exists → event remains anonymous
@@ -606,7 +610,7 @@ FROM (
         user_id,
         account_id,
         ROW_NUMBER() OVER (
-            PARTITION BY user_id 
+            PARTITION BY user_id
             ORDER BY event_timestamp DESC
         ) AS rn
     FROM tracks
@@ -637,10 +641,10 @@ Different tracking implementations use different field names for anonymous ident
 
 ```yaml
 vars:
-  enable_identity_stitching: true              # Set to false to completely disable identity stitching
-  identity_anonymous_id_field: "anonymous_id"  # Change to visitor_id, device_id, etc.
-  identity_lookback_days: 365                  # How far back to look for identity mappings
-  tracks_lookback_days: 365                    # How far back to process tracks data
+  enable_identity_stitching: true # Set to false to completely disable identity stitching
+  identity_anonymous_id_field: "anonymous_id" # Change to visitor_id, device_id, etc.
+  identity_lookback_days: 365 # How far back to look for identity mappings
+  tracks_lookback_days: 365 # How far back to process tracks data
 ```
 
 **When to adjust:**
@@ -650,10 +654,10 @@ vars:
   - **Effect:** Skips `stg_identity_resolution` and `stg_user_account_mapping` models, removes JOINs from `stg_segment_tracks`
   - **Performance benefit:** Eliminates identity stitching overhead if not needed
 - **`identity_anonymous_id_field`**: Change if your tracking uses a different field name (e.g., `visitor_id`, `device_id`, `client_id`)
-- **`identity_lookback_days`**: 
+- **`identity_lookback_days`**:
   - **Increase (730+ days):** If you have long sales cycles and need historical mappings
   - **Decrease (90-180 days):** For performance optimization if your sales cycle is short
-- **`tracks_lookback_days`**: 
+- **`tracks_lookback_days`**:
   - **Decrease (90-180 days):** To limit data processing volume and improve query performance
   - **Increase (730+ days):** If you need long-term historical analysis
 
@@ -694,33 +698,39 @@ Raw Data:
 ```
 
 All downstream models depend on the stitched events from `stg_segment_tracks`, so identity resolution happens at the foundation of the data pipeline.
+
 ### Performance Considerations
 
 Identity stitching adds two LEFT JOINs to the tracks staging model, which can impact query performance:
 
 **Query Performance:**
+
 - Each tracks query joins with `stg_identity_resolution` (small lookup table) and `stg_user_account_mapping` (user-level aggregation)
 - For large event volumes (millions of rows), these joins are the primary performance factor
 - **Recommended:** Materialize `stg_identity_resolution` and `stg_user_account_mapping` as **tables** (already configured by default)
 - **Optimization:** The lookback windows (`identity_lookback_days`, `tracks_lookback_days`) directly control data volume—decrease them if performance is a concern
 
 **Build Time:**
+
 - Initial `dbt run` processes all historical data within the lookback window
 - Subsequent incremental runs are much faster
-- **Typical timing:** 
+- **Typical timing:**
   - 1M events: ~30-60 seconds on medium warehouse
   - 10M events: ~3-5 minutes on medium warehouse
   - 100M+ events: Consider decreasing `tracks_lookback_days` to 90-180 days
 
 **Warehouse Costs:**
+
 - Identity stitching adds ~20-30% to staging layer compute time compared to no stitching
 - This is a one-time cost at the staging layer—downstream models benefit from clean, stitched data
 - **Cost optimization:** Use incremental runs (`dbt run`) instead of full refreshes for production
 
 **When to disable:**
+
 - If your product always requires authentication (no anonymous usage), you can skip identity stitching entirely
 - Set `enable_identity_stitching: false` in `dbt_project.yml` to disable all identity stitching models and joins
 - All tracks will pass through with their original `user_id` and `account_id` values
+
 ## � How Sessionization Works
 
 The `fct_sessions` table uses a sophisticated algorithm to group raw events into meaningful user sessions. Understanding this logic helps you interpret session metrics correctly and customize the timeout if needed.
@@ -763,7 +773,7 @@ We take those binary flags (0, 0, 1, 0, 1, 1, ...) and calculate a **cumulative 
 
 ```sql
 SUM(is_new_session_flag) OVER (
-  PARTITION BY user_id 
+  PARTITION BY user_id
   ORDER BY event_timestamp
 ) AS user_session_index
 ```
@@ -773,7 +783,7 @@ SUM(is_new_session_flag) OVER (
 **Example:**
 
 | Event Time | Flag | Cumulative Sum (Session Index) |
-|------------|------|--------------------------------|
+| ---------- | ---- | ------------------------------ |
 | 9:00 AM    | 0    | 0                              |
 | 9:10 AM    | 0    | 0                              |
 | 9:50 AM    | 1    | 1 (new session started)        |
@@ -797,7 +807,7 @@ When users switch accounts mid-session (rare but possible), we attribute the ses
 ```sql
 -- Use ROW_NUMBER to identify the first event
 ROW_NUMBER() OVER (
-  PARTITION BY user_id, user_session_index 
+  PARTITION BY user_id, user_session_index
   ORDER BY event_timestamp
 ) AS event_rank_in_session
 
@@ -827,7 +837,7 @@ The default 30-minute timeout works for most web applications, but you can adjus
 
 ```yaml
 vars:
-  session_timeout_minutes: 60  # Increase for longer workflows
+  session_timeout_minutes: 60 # Increase for longer workflows
 ```
 
 **When to change:**
@@ -846,28 +856,33 @@ The logic uses dbt's cross-database macros to work on both BigQuery and Snowflak
 - `dbt_utils.generate_surrogate_key()` for session ID generation
 
 This ensures the same SQL compiles correctly on both platforms.
+
 ### Performance Considerations
 
 Sessionization uses window functions (`LAG()`, `ROW_NUMBER()`, `SUM() OVER()`), which are compute-intensive:
 
 **Why It's Expensive:**
+
 - Window functions must process all events per user in order
 - Cannot be easily parallelized within a user's event stream
 - Performance scales with total event volume and number of unique users
 
 **Incremental Strategy:**
+
 - `fct_sessions` uses **incremental materialization** to minimize reprocessing
 - Initial `dbt run --full-refresh` processes all historical data
 - Subsequent `dbt run` only processes new events + a lookback window (default: `session_timeout_minutes`)
 - The lookback ensures sessions spanning multiple runs aren't split incorrectly
 
 **Optimization Strategies:**
+
 - **Use incremental runs for production:** Avoid `--full-refresh` unless changing `session_timeout_minutes`
 - **Reduce input volume:** Decrease `tracks_lookback_days` in staging to limit historical data
 - **Warehouse sizing:** Test with your actual data volume to determine appropriate warehouse size
 - **Clustering/Partitioning:** Consider adding clustering on `user_id` (Snowflake) or partitioning by date (BigQuery) for very large datasets
 
 **Monitoring:**
+
 - Run `dbt run --models fct_sessions` and check the logs for execution time
 - Compare incremental vs full-refresh timing to validate your incremental strategy is working
 - If builds are slower than expected, review the dbt docs on incremental model optimization for your warehouse
