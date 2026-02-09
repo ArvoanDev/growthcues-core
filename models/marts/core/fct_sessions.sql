@@ -40,4 +40,3 @@ SELECT
     COUNT(*) as events_in_session
 FROM session_grouping
 GROUP BY 1, 2
-ORDER BY session_start_at
