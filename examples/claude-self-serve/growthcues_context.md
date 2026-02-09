@@ -42,7 +42,19 @@ The database schema is **AI-Ready**. The logic for every metric is embedded dire
   - active_days_last_14: **\> 8** \= Power User habit (L14).
   - user_lifecycle_status: New, Active, Dormant, Resurrected, or Churned.
 
-### D. Metadata (dim_accounts, dim_users)
+### D. Session Engagement (fct_sessions)
+
+- **Grain:** 1 row per User Session.
+- **Use for:** Analyzing session-level patterns, engagement depth, time on platform.
+- **Key Concepts:**
+  - A session is a continuous sequence of events with no more than 30 minutes (configurable) of inactivity.
+  - Single-event sessions have 0 duration but still count as engagement.
+- **Example Metrics:**
+  - session_duration_seconds: Time between first and last event in session.
+  - events_in_session: Activity intensity within each session.
+  - Aggregate by user/account to analyze session frequency and depth.
+
+### E. Metadata (dim_accounts, dim_users)
 
 - Use dim_accounts to e.g., filter by current_active_seats (Account Size).
 - Use dim_users to map user_id to latest_account_id.
