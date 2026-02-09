@@ -1,8 +1,9 @@
-{{
+{{-
     config(
-        materialized='table'
+        materialized='table',
+        enabled=var('enable_identity_stitching', true)
     )
-}}
+-}}
 
 {%- set identity_anonymous_id_field = var('identity_anonymous_id_field', 'anonymous_id') -%}
 {%- set identity_lookback_days = var('identity_lookback_days', 365) -%}
@@ -16,7 +17,7 @@ with identifies as (
         timestamp
     from {{ source('segment', 'identifies') }}
     where user_id is not null
-        and timestamp >= {{ dbt.dateadd('day', -identity_lookback_days, dbt.current_timestamp()) }}
+        and cast(timestamp as datetime) >= {{ dbt.dateadd('day', -identity_lookback_days, dbt.current_timestamp()) }}
 ),
 
 last_touch as (

@@ -2,6 +2,7 @@
 
 {%- set identity_anonymous_id_field = var('identity_anonymous_id_field', 'anonymous_id') -%}
 {%- set tracks_lookback_days = var('tracks_lookback_days', 365) -%}
+{%- set enable_identity_stitching = var('enable_identity_stitching', true) -%}
 
 with source as (
   select
@@ -9,9 +10,10 @@ with source as (
   from
     {{ source('segment', 'tracks') }}
   where
-    timestamp >= {{ dbt.dateadd('day', -tracks_lookback_days, dbt.current_timestamp()) }}
+    cast(timestamp as datetime) >= {{ dbt.dateadd('day', -tracks_lookback_days, dbt.current_timestamp()) }}
 ),
 
+{% if enable_identity_stitching %}
 identity_mapping as (
   select
     anonymous_id,
@@ -27,11 +29,16 @@ user_account_mapping as (
   from
     {{ ref('stg_user_account_mapping') }}
 ),
+{% endif %}
 
 renamed as (
   select
     id as event_id,
+    {% if enable_identity_stitching %}
     {{ identity_anonymous_id_field }} as anonymous_id,
+    {% else %}
+    cast(null as {{ dbt.type_string() }}) as anonymous_id,
+    {% endif %}
     user_id,
     -- Segment stores the Account ID in 'context_group_id'
     -- We cast to string to ensure consistency across warehouses
@@ -46,6 +53,7 @@ renamed as (
     source
 ),
 
+{% if enable_identity_stitching %}
 stitched as (
   select
     r.event_id,
@@ -67,6 +75,21 @@ stitched as (
     user_account_mapping uam
     on coalesce(r.user_id, im.master_user_id) = uam.user_id
 )
+{% else %}
+stitched as (
+  select
+    event_id,
+    anonymous_id,
+    user_id as original_user_id,
+    user_id,
+    account_id as original_account_id,
+    account_id,
+    event_name,
+    event_at
+  from
+    renamed
+)
+{% endif %}
 
 select
   *

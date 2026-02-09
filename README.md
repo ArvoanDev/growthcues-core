@@ -630,6 +630,7 @@ Different tracking implementations use different field names for anonymous ident
 
 ```yaml
 vars:
+  enable_identity_stitching: true              # Set to false to completely disable identity stitching
   identity_anonymous_id_field: "anonymous_id"  # Change to visitor_id, device_id, etc.
   identity_lookback_days: 365                  # How far back to look for identity mappings
   tracks_lookback_days: 365                    # How far back to process tracks data
@@ -637,6 +638,10 @@ vars:
 
 **When to adjust:**
 
+- **`enable_identity_stitching`**: Set to `false` to disable identity stitching entirely
+  - **Use case:** Your product always requires authentication (no anonymous users)
+  - **Effect:** Skips `stg_identity_resolution` and `stg_user_account_mapping` models, removes JOINs from `stg_segment_tracks`
+  - **Performance benefit:** Eliminates identity stitching overhead if not needed
 - **`identity_anonymous_id_field`**: Change if your tracking uses a different field name (e.g., `visitor_id`, `device_id`, `client_id`)
 - **`identity_lookback_days`**: 
   - **Increase (730+ days):** If you have long sales cycles and need historical mappings
@@ -707,7 +712,8 @@ Identity stitching adds two LEFT JOINs to the tracks staging model, which can im
 
 **When to disable:**
 - If your product always requires authentication (no anonymous usage), you can skip identity stitching entirely
-- Comment out the joins in `stg_segment_tracks` and all tracks will pass through with their original `user_id`
+- Set `enable_identity_stitching: false` in `dbt_project.yml` to disable all identity stitching models and joins
+- All tracks will pass through with their original `user_id` and `account_id` values
 ## � How Sessionization Works
 
 The `fct_sessions` table uses a sophisticated algorithm to group raw events into meaningful user sessions. Understanding this logic helps you interpret session metrics correctly and customize the timeout if needed.

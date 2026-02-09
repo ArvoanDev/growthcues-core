@@ -1,8 +1,9 @@
-{{
+{{-
     config(
-        materialized='table'
+        materialized='table',
+        enabled=var('enable_identity_stitching', true)
     )
-}}
+-}}
 
 {%- set tracks_lookback_days = var('tracks_lookback_days', 365) -%}
 
@@ -15,7 +16,7 @@ with user_accounts as (
     from {{ source('segment', 'tracks') }}
     where user_id is not null
         and {{ var('group_id') }} is not null
-        and timestamp >= {{ dbt.dateadd('day', -tracks_lookback_days, dbt.current_timestamp()) }}
+        and cast(timestamp as datetime) >= {{ dbt.dateadd('day', -tracks_lookback_days, dbt.current_timestamp()) }}
 ),
 
 latest_account_per_user as (
