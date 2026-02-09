@@ -19,6 +19,10 @@ clean-targets: # directories to be removed by 'dbt clean'
 vars:
   session_timeout_minutes: 30 # Session timeout duration in minutes
   group_id: "context_group_id" # Group ID (account_id) field in Segment data; by default, Segment stores this in 'context_group_id' if following standard conventions (B2B Spec)
+  enable_identity_stitching: false # Set to false to disable identity stitching (if you don't have anonymous users or identifies table)
+  identity_anonymous_id_field: "anonymousId" # Field name for anonymous ID in identity stitching; e.g., anonymousId (Segment default), visitor_id, device_id
+  identity_lookback_days: 365 # Number of days to look back for identity resolution data
+  tracks_lookback_days: 365 # Number of days to look back for tracks/events data
 
 models:
   growthcues_core:
