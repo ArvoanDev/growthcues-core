@@ -16,6 +16,20 @@ daily_activity_granularity as (
     group by 1, 2, 3, 4
 ),
 
+daily_sessions as (
+    select
+        cast(session_start_at as date) as session_date,
+        s.account_id,
+        count(*) as n_sessions,
+        sum(s.session_duration_seconds) as total_session_time_seconds
+    from {{ ref('fct_sessions') }} s
+    inner join {{ ref('stg_segment_tracks') }} t
+        on s.user_id = t.user_id
+        and s.session_start_at = t.event_at
+    where s.account_id is not null
+    group by 1, 2
+),
+
 accounts as ( select account_id, first_seen_at from {{ ref('dim_accounts') }} ),
 
 date_spine as (
@@ -54,13 +68,30 @@ rolling_metrics as (
 
         -- STICKINESS FREQUENCY
         count(distinct case when g.activity_date > {{ dbt.dateadd('day', -7, 's.metric_date') }} then g.activity_date end) as active_days_7d,
-        count(distinct case when g.activity_date > {{ dbt.dateadd('day', -30, 's.metric_date') }} then g.activity_date end) as active_days_30d
+        count(distinct case when g.activity_date > {{ dbt.dateadd('day', -30, 's.metric_date') }} then g.activity_date end) as active_days_30d,
+
+        -- SESSION METRICS
+        -- Daily session metrics
+        coalesce(sum(case when ds.session_date = s.metric_date then ds.n_sessions end), 0) as n_sessions_daily,
+        coalesce(sum(case when ds.session_date = s.metric_date then ds.total_session_time_seconds end), 0) / 60.0 as time_on_platform_minutes_daily,
+
+        -- Cumulative session metrics (7 days)
+        coalesce(sum(case when ds.session_date > {{ dbt.dateadd('day', -7, 's.metric_date') }} then ds.n_sessions end), 0) as n_sessions_7d,
+        coalesce(sum(case when ds.session_date > {{ dbt.dateadd('day', -7, 's.metric_date') }} then ds.total_session_time_seconds end), 0) / 60.0 as time_on_platform_minutes_7d,
+
+        -- Cumulative session metrics (30 days)
+        coalesce(sum(case when ds.session_date > {{ dbt.dateadd('day', -30, 's.metric_date') }} then ds.n_sessions end), 0) as n_sessions_30d,
+        coalesce(sum(case when ds.session_date > {{ dbt.dateadd('day', -30, 's.metric_date') }} then ds.total_session_time_seconds end), 0) / 60.0 as time_on_platform_minutes_30d
 
     from account_spine s
     left join daily_activity_granularity g
         on g.account_id = s.account_id
         and g.activity_date > {{ dbt.dateadd('day', -30, 's.metric_date') }}
         and g.activity_date <= s.metric_date
+    left join daily_sessions ds
+        on ds.account_id = s.account_id
+        and ds.session_date > {{ dbt.dateadd('day', -30, 's.metric_date') }}
+        and ds.session_date <= s.metric_date
     group by 1, 2
 ),
 
@@ -102,6 +133,18 @@ select
     distinct_features_used_30d,
     active_days_7d,
     active_days_30d,
+    
+    -- SESSION METRICS -------------------------
+    n_sessions_daily,
+    round(time_on_platform_minutes_daily, 2) as time_on_platform_minutes_daily,
+    n_sessions_7d,
+    round(time_on_platform_minutes_7d, 2) as time_on_platform_minutes_7d,
+    n_sessions_30d,
+    round(time_on_platform_minutes_30d, 2) as time_on_platform_minutes_30d,
+    round(time_on_platform_minutes_7d / nullif(active_days_7d, 0), 2) as avg_daily_time_on_platform_minutes_7d,
+    round(time_on_platform_minutes_30d / nullif(active_days_30d, 0), 2) as avg_daily_time_on_platform_minutes_30d,
+    round(n_sessions_7d / nullif(active_days_7d, 0), 2) as avg_daily_sessions_7d,
+    round(n_sessions_30d / nullif(active_days_30d, 0), 2) as avg_daily_sessions_30d,
     
     -- GTM SIGNALS -------------------------
     
