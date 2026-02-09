@@ -307,12 +307,14 @@ By default, user sessions are defined with a 30-minute inactivity timeout. You c
 ```yaml
 vars:
   session_timeout_minutes: 30 # Change to your preferred timeout in minutes
+  include_pages_in_sessions: true # Set to false to exclude page views from sessions
 ```
 
 **What this controls:**
 
 - **Session definition:** Two events by the same user are considered part of the same session if they occur within this time window
 - **Incremental lookback:** When running incrementally, the model looks back this many minutes from the last session end to catch sessions that might still be active
+- **Page view inclusion:** When `include_pages_in_sessions` is `true` (default), both tracked events AND page views are included in session calculation. When `false`, only tracked events count toward sessions.
 
 **Common values:**
 
@@ -320,7 +322,12 @@ vars:
 - **60 minutes**: For products with longer, more contemplative workflows
 - **15 minutes**: For high-frequency, task-based applications
 
-After changing this value, run `dbt run --full-refresh` to recalculate all sessions with the new timeout.
+**Page view inclusion:**
+
+- **`true` (default)**: Page views contribute to session duration and help define session boundaries. Useful for content-heavy products where browsing is meaningful engagement.
+- **`false`**: Only explicit tracked events count in sessions. Useful for pure SaaS products where page views are navigation noise and only feature usage matters.
+
+After changing these values, run `dbt run --full-refresh` to recalculate all sessions with the new configuration.
 
 ### Step 8: Run the Models
 
@@ -722,9 +729,11 @@ The `fct_sessions` table uses a sophisticated algorithm to group raw events into
 
 A **session** is a continuous sequence of events by the same user with no more than **30 minutes** (configurable) of inactivity between events.
 
+**Note:** By default, sessions include both **tracked events** (from `stg_segment_tracks`) and **page views** (from `stg_segment_pages`). This can be controlled via the `include_pages_in_sessions` variable in `dbt_project.yml`.
+
 **Examples:**
 
-- User logs in at 9:00 AM, clicks 10 buttons, logs out at 9:45 AM → **1 session** (45 minutes duration)
+- User logs in at 9:00 AM, clicks 10 buttons, views 5 pages, logs out at 9:45 AM → **1 session** (45 minutes duration, 15 total interactions)
 - User active at 2:00 PM, then inactive until 3:00 PM → **2 sessions** (60-minute gap exceeds timeout)
 - User makes 1 click at 4:00 PM, no other activity → **1 session** (0 minutes duration, 1 event)
 

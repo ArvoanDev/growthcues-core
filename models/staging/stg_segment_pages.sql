@@ -1,10 +1,14 @@
-{{ config(materialized = 'view') }} 
+{{-
+  config(materialized = 'view',
+    enabled=var('include_pages_in_sessions', true)
+  )
+ }} 
 
 {%- set identity_anonymous_id_field = var('identity_anonymous_id_field', 'anonymous_id') -%}
-{%- set tracks_lookback_days = var('tracks_lookback_days', 365) -%}
+{%- set pages_lookback_days = var('pages_lookback_days', 365) -%}
 {%- set enable_identity_stitching = var('enable_identity_stitching', true) -%}
 {%- set group_id_column = var('group_id', 'context_group_id') -%}
-{%- set source_relation = source('segment', 'tracks') -%}
+{%- set source_relation = source('segment', 'pages') -%}
 {%- set source_columns = adapter.get_columns_in_relation(source_relation) | map(attribute='name') | map('lower') | list -%}
 {%- set has_group_id = group_id_column | lower in source_columns -%}
 
@@ -12,9 +16,9 @@ with source as (
   select
     *
   from
-    {{ source('segment', 'tracks') }}
+    {{ source('segment', 'pages') }}
   where
-    cast(timestamp as datetime) >= {{ dbt.dateadd('day', -tracks_lookback_days, dbt.current_timestamp()) }}
+    cast(timestamp as datetime) >= {{ dbt.dateadd('day', -pages_lookback_days, dbt.current_timestamp()) }}
 ),
 
 {% if enable_identity_stitching %}
@@ -37,7 +41,7 @@ user_account_mapping as (
 
 renamed as (
   select
-    id as event_id,
+    id as page_id,
     {% if enable_identity_stitching %}
     {{ identity_anonymous_id_field }} as anonymous_id,
     {% else %}
@@ -46,14 +50,21 @@ renamed as (
     user_id,
     -- Segment stores the Account ID in 'context_group_id'
     -- We cast to string to ensure consistency across warehouses
+    -- For pages, group_id is often null or missing for anonymous traffic
     {% if has_group_id %}
     cast({{ group_id_column }} as {{ dbt.type_string() }}) as account_id,
     {% else %}
     cast(null as {{ dbt.type_string() }}) as account_id,
     {% endif %}
-    event as event_name,
+    name as page_name,
     -- Handle timestamp normalization. You can e.g., prefer 'original_timestamp' as it reflects the client-side time
-    coalesce(timestamp, timestamp) as event_at
+    coalesce(timestamp, timestamp) as page_viewed_at,
+    -- Standard page properties automatically sent by Segment
+    {{ var('page_title_field', 'properties_title') }} as page_title,
+    {{ var('page_path_field', 'properties_path') }} as page_path,
+    {{ var('page_url_field', 'properties_url') }} as page_url,
+    {{ var('page_referrer_field', 'properties_referrer') }} as page_referrer,
+    {{ var('page_search_field', 'properties_search') }} as page_search
     -- Helper for context
     -- context_library_name,
     -- context_library_version
@@ -64,7 +75,7 @@ renamed as (
 {% if enable_identity_stitching %}
 stitched as (
   select
-    r.event_id,
+    r.page_id,
     r.anonymous_id,
     r.user_id as original_user_id,
     -- Use identity stitching: prefer explicit user_id, fall back to mapped master_user_id
@@ -72,8 +83,13 @@ stitched as (
     r.account_id as original_account_id,
     -- Backfill account_id for anonymous events using the stitched user's latest account
     coalesce(r.account_id, uam.latest_account_id) as account_id,
-    r.event_name,
-    r.event_at
+    r.page_name,
+    r.page_viewed_at,
+    r.page_title,
+    r.page_path,
+    r.page_url,
+    r.page_referrer,
+    r.page_search
   from
     renamed r
   left join
@@ -86,14 +102,19 @@ stitched as (
 {% else %}
 stitched as (
   select
-    event_id,
+    page_id,
     anonymous_id,
     user_id as original_user_id,
     user_id,
     account_id as original_account_id,
     account_id,
-    event_name,
-    event_at
+    page_name,
+    page_viewed_at,
+    page_title,
+    page_path,
+    page_url,
+    page_referrer,
+    page_search
   from
     renamed
 )
@@ -102,7 +123,7 @@ stitched as (
 select
   *
 from
-  stitched -- Filter out events not associated with an account (orphaned user actions)
+  stitched -- Filter out pages not associated with an account (orphaned user actions)
   -- For B2B metrics, we strictly need account context.
 where
   account_id is not null
