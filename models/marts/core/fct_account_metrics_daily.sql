@@ -111,7 +111,11 @@ trends_calculation as (
         lag(n_events_daily, 7) over (partition by account_id order by metric_date) as volume_lag_7,
         
         -- For Volumetric Churn calculation (Sum of events last 7 days)
-        sum(n_events_daily) over (partition by account_id order by metric_date rows between 6 preceding and current row) as volume_7d
+        sum(n_events_daily) over (partition by account_id order by metric_date rows between 6 preceding and current row) as volume_7d,
+        
+        -- Lags for Session-based Churn Signals
+        lag(time_on_platform_minutes_7d, 7) over (partition by account_id order by metric_date) as time_on_platform_7d_lag_7,
+        lag(n_sessions_7d, 7) over (partition by account_id order by metric_date) as n_sessions_7d_lag_7
     from rolling_metrics
 )
 
@@ -148,12 +152,26 @@ select
     -- 1. Expansion Signal: Weekly Seat Velocity
     (wau - wau_lag_7) as net_new_users_7d,
 
-    -- 2. Churn Signal: Usage Contraction
+    -- 2. Churn Signal: Usage Contraction (Event Volume)
     case 
         when lag(volume_7d, 7) over (partition by account_id order by metric_date) > 0 
         then round(volume_7d / nullif(lag(volume_7d, 7) over (partition by account_id order by metric_date),0), 2)
         else 1 
     end as volume_change_ratio_7d,
+
+    -- 3. Churn Signal: Time on Platform Contraction
+    case 
+        when time_on_platform_7d_lag_7 > 0 
+        then round(time_on_platform_minutes_7d / nullif(time_on_platform_7d_lag_7, 0), 2)
+        else 1 
+    end as time_on_platform_change_ratio_7d,
+
+    -- 4. Churn Signal: Session Frequency Contraction
+    case 
+        when n_sessions_7d_lag_7 > 0 
+        then round(n_sessions_7d / nullif(n_sessions_7d_lag_7, 0), 2)
+        else 1 
+    end as session_frequency_change_ratio_7d,
 
     -- Standard Ratios
     round(active_days_7d / nullif(active_days_30d, 0), 2) as account_stickiness_ratio,

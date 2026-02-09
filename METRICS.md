@@ -83,10 +83,12 @@ _Formula: `(Current - Lagged) / Days`. Represents average net daily growth for t
 
 ### GTM Signals
 
-| Column                     | Definition                                                   | Use Case                                                    |
-| :------------------------- | :----------------------------------------------------------- | :---------------------------------------------------------- |
-| **net_new_users_7d**       | **Expansion Signal.** Change in active seats vs. last week.  | **Sales:** Identify accounts adding users rapidly.          |
-| **volume_change_ratio_7d** | **Churn Signal.** Ratio of Event Volume (Last 7d / Prev 7d). | **Success:** Detect sharp drops in usage intensity (\<0.5). |
+| Column                                | Definition                                                       | Use Case                                                           |
+| :------------------------------------ | :--------------------------------------------------------------- | :----------------------------------------------------------------- |
+| **net_new_users_7d**                  | **Expansion Signal.** Change in active seats vs. last week.      | **Sales:** Identify accounts adding users rapidly.                 |
+| **volume_change_ratio_7d**            | **Churn Signal.** Ratio of Event Volume (Last 7d / Prev 7d).     | **Success:** Detect sharp drops in usage intensity (\<0.5).        |
+| **time_on_platform_change_ratio_7d**  | **Churn Signal.** Ratio of Time on Platform (Last 7d / Prev 7d). | **Success:** Detect declining engagement depth (\<0.5).            |
+| **session_frequency_change_ratio_7d** | **Churn Signal.** Ratio of Session Count (Last 7d / Prev 7d).    | **Success:** Detect users opening product less frequently (\<0.5). |
 
 ## 3. User Metrics & Champions (`fct_user_metrics_daily`)
 
