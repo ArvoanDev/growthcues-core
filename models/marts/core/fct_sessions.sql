@@ -24,21 +24,31 @@ WITH tracks_session_flags AS (
     {% endif %}
 ),
 
-session_grouping AS (
+session_grouping_base AS (
     SELECT
         *,
         -- Cumulative sum of flags creates a unique ID for each user's session
         SUM(is_new_session_flag) OVER (PARTITION BY user_id ORDER BY occurred_at) as user_session_index
     FROM tracks_session_flags
+),
+
+session_grouping AS (
+    SELECT
+        *,
+        -- Mark the first event in each session with ROW_NUMBER
+        ROW_NUMBER() OVER (PARTITION BY user_id, user_session_index ORDER BY occurred_at) as event_rank_in_session
+    FROM session_grouping_base
 )
 
 SELECT
     {{ dbt_utils.generate_surrogate_key(['user_id', 'user_session_index']) }} as session_id,
     user_id,
-    account_id,
+    user_session_index,
     MIN(occurred_at) as session_start_at,
     MAX(occurred_at) as session_end_at,
     {{ dbt.datediff('MIN(occurred_at)', 'MAX(occurred_at)', 'second') }} as session_duration_seconds,
-    COUNT(*) as events_in_session
+    COUNT(*) as events_in_session,
+    -- Get account_id from the first event (where event_rank_in_session = 1)
+    MAX(CASE WHEN event_rank_in_session = 1 THEN account_id END) as account_id
 FROM session_grouping
 GROUP BY 1, 2, 3

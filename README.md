@@ -487,7 +487,131 @@ _Sources: `dim_accounts` and `dim_users`_
 
 _See `METRICS.md` for full definitions._
 
-## 🔮 About GrowthCues
+## � How Sessionization Works
+
+The `fct_sessions` table uses a sophisticated algorithm to group raw events into meaningful user sessions. Understanding this logic helps you interpret session metrics correctly and customize the timeout if needed.
+
+### What is a Session?
+
+A **session** is a continuous sequence of events by the same user with no more than **30 minutes** (configurable) of inactivity between events.
+
+**Examples:**
+
+- User logs in at 9:00 AM, clicks 10 buttons, logs out at 9:45 AM → **1 session** (45 minutes duration)
+- User active at 2:00 PM, then inactive until 3:00 PM → **2 sessions** (60-minute gap exceeds timeout)
+- User makes 1 click at 4:00 PM, no other activity → **1 session** (0 minutes duration, 1 event)
+
+### The Algorithm
+
+The sessionization logic uses a **three-step window function approach**:
+
+#### Step 1: Detect Session Boundaries
+
+For each event, we look at the **previous event** by the same user and calculate the time gap:
+
+```sql
+-- If gap > 30 minutes → new session (flag = 1)
+-- If gap ≤ 30 minutes → same session (flag = 0)
+CASE
+  WHEN DATEDIFF(previous_event, current_event, 'minute') > 30
+  THEN 1
+  ELSE 0
+END AS is_new_session_flag
+```
+
+Uses `LAG()` window function to access the previous event timestamp.
+
+#### Step 2: Create Session Groups
+
+We take those binary flags (0, 0, 1, 0, 1, 1, ...) and calculate a **cumulative sum**:
+
+```sql
+SUM(is_new_session_flag) OVER (
+  PARTITION BY user_id 
+  ORDER BY event_timestamp
+) AS user_session_index
+```
+
+**Result:** Each session gets a unique index number (0, 1, 2, 3, ...) per user.
+
+**Example:**
+
+| Event Time | Flag | Cumulative Sum (Session Index) |
+|------------|------|--------------------------------|
+| 9:00 AM    | 0    | 0                              |
+| 9:10 AM    | 0    | 0                              |
+| 9:50 AM    | 1    | 1 (new session started)        |
+| 10:00 AM   | 0    | 1                              |
+| 11:00 AM   | 1    | 2 (new session started)        |
+
+#### Step 3: Aggregate to Session Level
+
+Finally, we group all events by `(user_id, user_session_index)` and calculate:
+
+- **Session Start:** `MIN(event_timestamp)`
+- **Session End:** `MAX(event_timestamp)`
+- **Duration:** Time difference between start and end
+- **Events in Session:** `COUNT(*)`
+- **Account ID:** Taken from the **first event** chronologically in the session
+
+### Account Attribution Logic
+
+When users switch accounts mid-session (rare but possible), we attribute the session to the **account where the session started**:
+
+```sql
+-- Use ROW_NUMBER to identify the first event
+ROW_NUMBER() OVER (
+  PARTITION BY user_id, user_session_index 
+  ORDER BY event_timestamp
+) AS event_rank_in_session
+
+-- Then extract account_id from that first event
+MAX(CASE WHEN event_rank_in_session = 1 THEN account_id END) AS account_id
+```
+
+This ensures sessions are cleanly attributed to a single account for aggregation.
+
+### Incremental Processing
+
+To optimize warehouse costs, the model uses **incremental materialization**:
+
+```sql
+-- On incremental runs, only process NEW events
+-- But look back 30 minutes to catch sessions still in progress
+WHERE event_at >= (last_session_end - 30 minutes)
+```
+
+**Why the lookback?** Without it, a session spanning multiple incremental runs would be split into separate sessions. The lookback ensures we recalculate any session that might still be active.
+
+**Trade-off:** Small amount of duplicate work (last 30 minutes) to ensure correctness.
+
+### Customizing Session Timeout
+
+The default 30-minute timeout works for most web applications, but you can adjust it in `dbt_project.yml`:
+
+```yaml
+vars:
+  session_timeout_minutes: 60  # Increase for longer workflows
+```
+
+**When to change:**
+
+- **Increase (60+ min):** For products with contemplative workflows (e.g., design tools, research platforms)
+- **Decrease (15 min):** For high-frequency, task-based apps (e.g., chat tools, quick lookups)
+
+After changing, run `dbt run --full-refresh --models fct_sessions` to recalculate all sessions with the new timeout.
+
+### Cross-Database Compatibility
+
+The logic uses dbt's cross-database macros to work on both BigQuery and Snowflake:
+
+- `dbt.datediff()` instead of `TIMESTAMP_DIFF` or `DATEDIFF`
+- `dbt.dateadd()` instead of `TIMESTAMP_ADD` or `DATEADD`
+- `dbt_utils.generate_surrogate_key()` for session ID generation
+
+This ensures the same SQL compiles correctly on both platforms.
+
+## �🔮 About GrowthCues
 
 This repository handles the Descriptive Layer of your GTM stack (answering "what happened?") and is 100% open source. It contains the foundational metrics every B2B SaaS company needs.
 

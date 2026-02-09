@@ -503,6 +503,27 @@ models:
       A session is a sequence of events by the same user with no more than 30 minutes (configurable) of inactivity between events.
       [Context] Use this table to analyze session-level patterns like session duration, events per session, and session frequency.
       Materialized incrementally with partitioning for cost efficiency.
+    tests:
+      # Ensure no negative durations
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "session_duration_seconds >= 0"
+          config:
+            severity: error
+
+      # Ensure session_end_at >= session_start_at
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "session_end_at >= session_start_at"
+          config:
+            severity: error
+
+      # Ensure events_in_session is at least 1
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "events_in_session >= 1"
+          config:
+            severity: error
     columns:
       - name: session_id
         tests: [unique, not_null]
