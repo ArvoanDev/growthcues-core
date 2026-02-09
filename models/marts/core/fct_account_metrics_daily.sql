@@ -16,6 +16,17 @@ daily_activity_granularity as (
     group by 1, 2, 3, 4
 ),
 
+daily_sessions as (
+    select
+        cast(session_start_at as date) as session_date,
+        account_id,
+        count(*) as n_sessions,
+        sum(session_duration_seconds) as total_session_time_seconds
+    from {{ ref('fct_sessions') }}
+    where account_id is not null
+    group by 1, 2
+),
+
 accounts as ( select account_id, first_seen_at from {{ ref('dim_accounts') }} ),
 
 date_spine as (
@@ -54,13 +65,30 @@ rolling_metrics as (
 
         -- STICKINESS FREQUENCY
         count(distinct case when g.activity_date > {{ dbt.dateadd('day', -7, 's.metric_date') }} then g.activity_date end) as active_days_7d,
-        count(distinct case when g.activity_date > {{ dbt.dateadd('day', -30, 's.metric_date') }} then g.activity_date end) as active_days_30d
+        count(distinct case when g.activity_date > {{ dbt.dateadd('day', -30, 's.metric_date') }} then g.activity_date end) as active_days_30d,
+
+        -- SESSION METRICS
+        -- Daily session metrics
+        coalesce(sum(case when ds.session_date = s.metric_date then ds.n_sessions end), 0) as n_sessions_daily,
+        coalesce(sum(case when ds.session_date = s.metric_date then ds.total_session_time_seconds end), 0) / 60.0 as time_on_platform_minutes_daily,
+
+        -- Cumulative session metrics (7 days)
+        coalesce(sum(case when ds.session_date > {{ dbt.dateadd('day', -7, 's.metric_date') }} then ds.n_sessions end), 0) as n_sessions_7d,
+        coalesce(sum(case when ds.session_date > {{ dbt.dateadd('day', -7, 's.metric_date') }} then ds.total_session_time_seconds end), 0) / 60.0 as time_on_platform_minutes_7d,
+
+        -- Cumulative session metrics (30 days)
+        coalesce(sum(case when ds.session_date > {{ dbt.dateadd('day', -30, 's.metric_date') }} then ds.n_sessions end), 0) as n_sessions_30d,
+        coalesce(sum(case when ds.session_date > {{ dbt.dateadd('day', -30, 's.metric_date') }} then ds.total_session_time_seconds end), 0) / 60.0 as time_on_platform_minutes_30d
 
     from account_spine s
     left join daily_activity_granularity g
         on g.account_id = s.account_id
         and g.activity_date > {{ dbt.dateadd('day', -30, 's.metric_date') }}
         and g.activity_date <= s.metric_date
+    left join daily_sessions ds
+        on ds.account_id = s.account_id
+        and ds.session_date > {{ dbt.dateadd('day', -30, 's.metric_date') }}
+        and ds.session_date <= s.metric_date
     group by 1, 2
 ),
 
@@ -83,7 +111,11 @@ trends_calculation as (
         lag(n_events_daily, 7) over (partition by account_id order by metric_date) as volume_lag_7,
         
         -- For Volumetric Churn calculation (Sum of events last 7 days)
-        sum(n_events_daily) over (partition by account_id order by metric_date rows between 6 preceding and current row) as volume_7d
+        sum(n_events_daily) over (partition by account_id order by metric_date rows between 6 preceding and current row) as volume_7d,
+        
+        -- Lags for Session-based Churn Signals
+        lag(time_on_platform_minutes_7d, 7) over (partition by account_id order by metric_date) as time_on_platform_7d_lag_7,
+        lag(n_sessions_7d, 7) over (partition by account_id order by metric_date) as n_sessions_7d_lag_7
     from rolling_metrics
 )
 
@@ -103,17 +135,43 @@ select
     active_days_7d,
     active_days_30d,
     
+    -- SESSION METRICS -------------------------
+    n_sessions_daily,
+    round(time_on_platform_minutes_daily, 2) as time_on_platform_minutes_daily,
+    n_sessions_7d,
+    round(time_on_platform_minutes_7d, 2) as time_on_platform_minutes_7d,
+    n_sessions_30d,
+    round(time_on_platform_minutes_30d, 2) as time_on_platform_minutes_30d,
+    round(time_on_platform_minutes_7d / nullif(active_days_7d, 0), 2) as avg_daily_time_on_platform_minutes_7d,
+    round(time_on_platform_minutes_30d / nullif(active_days_30d, 0), 2) as avg_daily_time_on_platform_minutes_30d,
+    round(n_sessions_7d / nullif(active_days_7d, 0), 2) as avg_daily_sessions_7d,
+    round(n_sessions_30d / nullif(active_days_30d, 0), 2) as avg_daily_sessions_30d,
+    
     -- GTM SIGNALS -------------------------
     
     -- 1. Expansion Signal: Weekly Seat Velocity
     (wau - wau_lag_7) as net_new_users_7d,
 
-    -- 2. Churn Signal: Usage Contraction
+    -- 2. Churn Signal: Usage Contraction (Event Volume)
     case 
         when lag(volume_7d, 7) over (partition by account_id order by metric_date) > 0 
         then round(volume_7d / nullif(lag(volume_7d, 7) over (partition by account_id order by metric_date),0), 2)
         else 1 
     end as volume_change_ratio_7d,
+
+    -- 3. Churn Signal: Time on Platform Contraction
+    case 
+        when time_on_platform_7d_lag_7 > 0 
+        then round(time_on_platform_minutes_7d / nullif(time_on_platform_7d_lag_7, 0), 2)
+        else 1 
+    end as time_on_platform_change_ratio_7d,
+
+    -- 4. Churn Signal: Session Frequency Contraction
+    case 
+        when n_sessions_7d_lag_7 > 0 
+        then round(n_sessions_7d / nullif(n_sessions_7d_lag_7, 0), 2)
+        else 1 
+    end as session_frequency_change_ratio_7d,
 
     -- Standard Ratios
     round(active_days_7d / nullif(active_days_30d, 0), 2) as account_stickiness_ratio,

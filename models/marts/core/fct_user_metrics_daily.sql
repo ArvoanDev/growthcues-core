@@ -25,6 +25,18 @@ daily_activity as (
     group by 1, 2
 ),
 
+daily_sessions as (
+    select
+        cast(session_start_at as date) as session_date,
+        user_id,
+        count(*) as n_sessions,
+        avg(session_duration_seconds / 60.0) as avg_session_duration_minutes,
+        avg(events_in_session) as avg_events_per_session
+    from {{ ref('fct_sessions') }}
+    where user_id is not null
+    group by 1, 2
+),
+
 user_days as (
     select
         d.date_day as metric_date,
@@ -42,11 +54,17 @@ joined_data as (
         ud.first_seen_at,
         coalesce(da.n_events, 0) as n_events_daily,
         coalesce(da.n_features, 0) as n_features_daily,
-        case when coalesce(da.n_events, 0) > 0 then 1 else 0 end as is_active_daily
+        case when coalesce(da.n_events, 0) > 0 then 1 else 0 end as is_active_daily,
+        coalesce(ds.n_sessions, 0) as n_sessions_daily,
+        ds.avg_session_duration_minutes,
+        ds.avg_events_per_session
     from user_days ud
     left join daily_activity da 
         on ud.user_id = da.user_id 
         and ud.metric_date = da.activity_date
+    left join daily_sessions ds
+        on ud.user_id = ds.user_id
+        and ud.metric_date = ds.session_date
 ),
 
 windowed as (
@@ -91,7 +109,26 @@ windowed as (
             partition by user_id 
             order by metric_date 
             rows between 13 preceding and current row
-        ) as active_days_last_14
+        ) as active_days_last_14,
+
+        -- Rolling 30 Day Session Metrics
+        sum(n_sessions_daily) over (
+            partition by user_id 
+            order by metric_date 
+            rows between 29 preceding and current row
+        ) as n_sessions_monthly,
+
+        avg(avg_session_duration_minutes) over (
+            partition by user_id 
+            order by metric_date 
+            rows between 29 preceding and current row
+        ) as avg_session_duration_minutes_monthly,
+
+        avg(avg_events_per_session) over (
+            partition by user_id 
+            order by metric_date 
+            rows between 29 preceding and current row
+        ) as avg_session_length_monthly
 
     from joined_data
 ),
@@ -114,6 +151,10 @@ select
     w.active_days_last_7,
     w.active_days_last_14,
     w.n_events_monthly,
+    w.n_sessions_daily,
+    w.n_sessions_monthly,
+    w.avg_session_duration_minutes_monthly,
+    w.avg_session_length_monthly,
     
     -- GTM SIGNALS
     -- 1. Identifying the "Champion" (Rank 1 = Top User)

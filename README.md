@@ -14,23 +14,25 @@ A dbt project to calculate **Account-Level** and **Product-Level** metrics from 
 
 Most analytics tools focus only on Users. B2B businesses need to track **Accounts**. This project handles both.
 
-It produces five critical tables in your warehouse:
+It produces six critical tables in your warehouse:
 
 1. **`fct_product_metrics_daily`**: The executive view. Global DAU/WAU/MAU and Account volume (DAA/WAA/MAA) across the entire product, with velocity trends.
 
 2. **`fct_account_metrics_daily`**: The operational view. Granular, account-by-account health metrics including Stickiness, Feature Breadth, Seat Velocity, Usage Contraction, and Churn Risk flags.
 
-3. **`fct_user_metrics_daily`**: The behavioral view. Snapshot of individual user activity, frequency, champion identification, admin proxy flags, and lifecycle status.
+3. **`fct_user_metrics_daily`**: The behavioral view. Snapshot of individual user activity, frequency, session patterns, champion identification, admin proxy flags, and lifecycle status.
 
-4. **`dim_accounts`**: A master dimension table for every company, including first/last seen timestamps, current active seats, lifetime users, and days since activity.
+4. **`fct_sessions`**: The engagement view. Sessionized event data showing user engagement patterns including session duration, events per session, and session frequency.
 
-5. **`dim_users`**: A master dimension table for every user, including first/last seen timestamps, lifetime account associations, and primary account mapping.
+5. **`dim_accounts`**: A master dimension table for every company, including first/last seen timestamps, current active seats, lifetime users, and days since activity.
+
+6. **`dim_users`**: A master dimension table for every user, including first/last seen timestamps, lifetime account associations, and primary account mapping.
 
 ## 🚀 Features
 
 - **Warehouse Native:** Runs entirely on Snowflake or BigQuery. No data leaves your infrastructure.
 
-- **B2B Standard:** Compatible out-of-the-box with Segment and Rudderstack using the **Segment B2B SaaS spec** (requires `context_group_id` in tracks table for account identification).
+- **B2B Standard:** Compatible out-of-the-box with Segment and Rudderstack using the **Segment B2B SaaS spec**. Requires `context_group_id` in tracks table for account identification; however, you can customize this field in `dbt_project.yml` if your implementation differs.
 
 - **B2B SaaS Granularity:** Calculates metrics at the Global (Product), Account (Customer), and User (Person) levels.
 
@@ -49,7 +51,7 @@ Before you begin, ensure you have:
   - `tracks` table with `context_group_id` field (containing the account/group ID)
   - `users` table (identify calls)
   - `groups` table (group/account identify calls)
-  - **Note:** This project assumes the B2B SaaS data model where account context is passed via `context_group_id` in event tracking
+  - **Note:** This project assumes the B2B SaaS data model where account context is passed via `context_group_id` in event tracking. If your implementation uses a different field for account IDs, you can customize this in `dbt_project.yml`.
 
 ### Step 1: Install Python (if not already installed)
 
@@ -294,6 +296,28 @@ dbt deps
 
 You should see a message confirming that packages were installed.
 
+### Step 7.5: Configure Session Timeout (Optional)
+
+By default, user sessions are defined with a 30-minute inactivity timeout. You can customize this in `dbt_project.yml`:
+
+```yaml
+vars:
+  session_timeout_minutes: 30 # Change to your preferred timeout in minutes
+```
+
+**What this controls:**
+
+- **Session definition:** Two events by the same user are considered part of the same session if they occur within this time window
+- **Incremental lookback:** When running incrementally, the model looks back this many minutes from the last session end to catch sessions that might still be active
+
+**Common values:**
+
+- **30 minutes** (default): Standard for most web applications
+- **60 minutes**: For products with longer, more contemplative workflows
+- **15 minutes**: For high-frequency, task-based applications
+
+After changing this value, run `dbt run --full-refresh` to recalculate all sessions with the new timeout.
+
 ### Step 8: Run the Models
 
 Now you're ready to build your metrics tables! Run:
@@ -304,10 +328,11 @@ dbt run
 
 **What happens:**
 
-- dbt will create five new tables/views in your warehouse:
+- dbt will create six new tables/views in your warehouse:
   - `fct_product_metrics_daily` - Global product metrics (DAU, MAU, DAA, MAA, etc.)
   - `fct_account_metrics_daily` - Account-level health metrics (stickiness, churn risk, etc.)
   - `fct_user_metrics_daily` - User-level behavioral metrics and lifecycle status
+  - `fct_sessions` - Session-level engagement data (duration, events per session, etc.)
   - `dim_accounts` - Master account dimension table
   - `dim_users` - Master user dimension table
 
@@ -422,32 +447,34 @@ _Source: `fct_product_metrics_daily`_
 
 _Source: `fct_account_metrics_daily`_
 
-| Metric                      | Definition                                                        | PLG Use Case                                     |
-| :-------------------------- | :---------------------------------------------------------------- | :----------------------------------------------- |
-| **Account DAU / WAU / MAU** | Active users within this specific account (daily/weekly/monthly). | Measuring per-account seat utilization.          |
-| **Daily Event Volume**      | Total events performed by this account today.                     | Tracking engagement intensity.                   |
-| **Feature Breadth**         | Count of unique event types used in last 30 days.                 | Measuring product depth and sophistication.      |
-| **Active Days (7d/30d)**    | Number of days the account was active.                            | Frequency indicator for engagement patterns.     |
-| **Account Stickiness**      | Ratio of active_days_7d / active_days_30d.                        | Measuring usage consistency and habit formation. |
-| **User Stickiness**         | Ratio of DAU / MAU _within_ that account.                         | Measuring user depth and engagement quality.     |
-| **Dormant Risk**            | Active in last 30 days, but 0 events in last 7 days.              | Early warning for proactive churn prevention.    |
-| **Net New Users (7d)**      | Weekly seat velocity (change in active seats).                    | Expansion signals for upsell opportunities.      |
-| **Volume Change Ratio**     | Event volume trend (last 7d vs prior 7d).                         | Churn warning when usage is declining.           |
-| **Velocity Trends**         | 7, 14, and 30-day trends for DAU/WAU/MAU.                         | Account growth momentum tracking.                |
+| Metric                      | Definition                                                              | PLG Use Case                                               |
+| :-------------------------- | :---------------------------------------------------------------------- | :--------------------------------------------------------- |
+| **Account DAU / WAU / MAU** | Active users within this specific account (daily/weekly/monthly).       | Measuring per-account seat utilization.                    |
+| **Daily Event Volume**      | Total events performed by this account today.                           | Tracking engagement intensity.                             |
+| **Session Metrics**         | Sessions per day/7d/30d, time on platform, average daily sessions/time. | Understanding account engagement depth and usage patterns. |
+| **Feature Breadth**         | Count of unique event types used in last 30 days.                       | Measuring product depth and sophistication.                |
+| **Active Days (7d/30d)**    | Number of days the account was active.                                  | Frequency indicator for engagement patterns.               |
+| **Account Stickiness**      | Ratio of active_days_7d / active_days_30d.                              | Measuring usage consistency and habit formation.           |
+| **User Stickiness**         | Ratio of DAU / MAU _within_ that account.                               | Measuring user depth and engagement quality.               |
+| **Dormant Risk**            | Active in last 30 days, but 0 events in last 7 days.                    | Early warning for proactive churn prevention.              |
+| **Net New Users (7d)**      | Weekly seat velocity (change in active seats).                          | Expansion signals for upsell opportunities.                |
+| **Volume Change Ratio**     | Event volume trend (last 7d vs prior 7d).                               | Churn warning when usage is declining.                     |
+| **Velocity Trends**         | 7, 14, and 30-day trends for DAU/WAU/MAU.                               | Account growth momentum tracking.                          |
 
 ### User Level (Per Person)
 
 _Source: `fct_user_metrics_daily`_
 
-| Metric                       | Definition                                           | PLG Use Case                                           |
-| :--------------------------- | :--------------------------------------------------- | :----------------------------------------------------- |
-| **Daily/Monthly Events**     | Event volume on snapshot date and over last 30 days. | Measuring individual user engagement intensity.        |
-| **Usage Frequency (L7/L14)** | Days active in last 7 and 14 days.                   | Identifying "Power Users" (3+ days in L7, 10+ in L14). |
-| **Usage Rank in Account**    | User's ranking by volume within their account.       | Identifying "Champions" (Rank 1) for customer success. |
-| **Admin Proxy Flag**         | First user seen in the account (likely buyer/admin). | Targeting decision-makers for renewals and expansion.  |
-| **Feature Sophistication**   | Count of unique features used in last 30 days.       | Measuring product depth and power user behavior.       |
-| **Lifecycle Status**         | New, Active, Dormant, Resurrected, or Churned.       | Growth Accounting and retention analysis.              |
-| **Latest Account**           | The primary account ID for this user.                | Mapping users to organizations.                        |
+| Metric                       | Definition                                                        | PLG Use Case                                           |
+| :--------------------------- | :---------------------------------------------------------------- | :----------------------------------------------------- |
+| **Daily/Monthly Events**     | Event volume on snapshot date and over last 30 days.              | Measuring individual user engagement intensity.        |
+| **Session Metrics**          | Sessions per day/month, avg session duration, events per session. | Understanding engagement depth and usage patterns.     |
+| **Usage Frequency (L7/L14)** | Days active in last 7 and 14 days.                                | Identifying "Power Users" (3+ days in L7, 10+ in L14). |
+| **Usage Rank in Account**    | User's ranking by volume within their account.                    | Identifying "Champions" (Rank 1) for customer success. |
+| **Admin Proxy Flag**         | First user seen in the account (likely buyer/admin).              | Targeting decision-makers for renewals and expansion.  |
+| **Feature Sophistication**   | Count of unique features used in last 30 days.                    | Measuring product depth and power user behavior.       |
+| **Lifecycle Status**         | New, Active, Dormant, Resurrected, or Churned.                    | Growth Accounting and retention analysis.              |
+| **Latest Account**           | The primary account ID for this user.                             | Mapping users to organizations.                        |
 
 ### Dimension Tables
 
@@ -460,7 +487,131 @@ _Sources: `dim_accounts` and `dim_users`_
 
 _See `METRICS.md` for full definitions._
 
-## 🔮 About GrowthCues
+## � How Sessionization Works
+
+The `fct_sessions` table uses a sophisticated algorithm to group raw events into meaningful user sessions. Understanding this logic helps you interpret session metrics correctly and customize the timeout if needed.
+
+### What is a Session?
+
+A **session** is a continuous sequence of events by the same user with no more than **30 minutes** (configurable) of inactivity between events.
+
+**Examples:**
+
+- User logs in at 9:00 AM, clicks 10 buttons, logs out at 9:45 AM → **1 session** (45 minutes duration)
+- User active at 2:00 PM, then inactive until 3:00 PM → **2 sessions** (60-minute gap exceeds timeout)
+- User makes 1 click at 4:00 PM, no other activity → **1 session** (0 minutes duration, 1 event)
+
+### The Algorithm
+
+The sessionization logic uses a **three-step window function approach**:
+
+#### Step 1: Detect Session Boundaries
+
+For each event, we look at the **previous event** by the same user and calculate the time gap:
+
+```sql
+-- If gap > 30 minutes → new session (flag = 1)
+-- If gap ≤ 30 minutes → same session (flag = 0)
+CASE
+  WHEN DATEDIFF(previous_event, current_event, 'minute') > 30
+  THEN 1
+  ELSE 0
+END AS is_new_session_flag
+```
+
+Uses `LAG()` window function to access the previous event timestamp.
+
+#### Step 2: Create Session Groups
+
+We take those binary flags (0, 0, 1, 0, 1, 1, ...) and calculate a **cumulative sum**:
+
+```sql
+SUM(is_new_session_flag) OVER (
+  PARTITION BY user_id 
+  ORDER BY event_timestamp
+) AS user_session_index
+```
+
+**Result:** Each session gets a unique index number (0, 1, 2, 3, ...) per user.
+
+**Example:**
+
+| Event Time | Flag | Cumulative Sum (Session Index) |
+|------------|------|--------------------------------|
+| 9:00 AM    | 0    | 0                              |
+| 9:10 AM    | 0    | 0                              |
+| 9:50 AM    | 1    | 1 (new session started)        |
+| 10:00 AM   | 0    | 1                              |
+| 11:00 AM   | 1    | 2 (new session started)        |
+
+#### Step 3: Aggregate to Session Level
+
+Finally, we group all events by `(user_id, user_session_index)` and calculate:
+
+- **Session Start:** `MIN(event_timestamp)`
+- **Session End:** `MAX(event_timestamp)`
+- **Duration:** Time difference between start and end
+- **Events in Session:** `COUNT(*)`
+- **Account ID:** Taken from the **first event** chronologically in the session
+
+### Account Attribution Logic
+
+When users switch accounts mid-session (rare but possible), we attribute the session to the **account where the session started**:
+
+```sql
+-- Use ROW_NUMBER to identify the first event
+ROW_NUMBER() OVER (
+  PARTITION BY user_id, user_session_index 
+  ORDER BY event_timestamp
+) AS event_rank_in_session
+
+-- Then extract account_id from that first event
+MAX(CASE WHEN event_rank_in_session = 1 THEN account_id END) AS account_id
+```
+
+This ensures sessions are cleanly attributed to a single account for aggregation.
+
+### Incremental Processing
+
+To optimize warehouse costs, the model uses **incremental materialization**:
+
+```sql
+-- On incremental runs, only process NEW events
+-- But look back 30 minutes to catch sessions still in progress
+WHERE event_at >= (last_session_end - 30 minutes)
+```
+
+**Why the lookback?** Without it, a session spanning multiple incremental runs would be split into separate sessions. The lookback ensures we recalculate any session that might still be active.
+
+**Trade-off:** Small amount of duplicate work (last 30 minutes) to ensure correctness.
+
+### Customizing Session Timeout
+
+The default 30-minute timeout works for most web applications, but you can adjust it in `dbt_project.yml`:
+
+```yaml
+vars:
+  session_timeout_minutes: 60  # Increase for longer workflows
+```
+
+**When to change:**
+
+- **Increase (60+ min):** For products with contemplative workflows (e.g., design tools, research platforms)
+- **Decrease (15 min):** For high-frequency, task-based apps (e.g., chat tools, quick lookups)
+
+After changing, run `dbt run --full-refresh --models fct_sessions` to recalculate all sessions with the new timeout.
+
+### Cross-Database Compatibility
+
+The logic uses dbt's cross-database macros to work on both BigQuery and Snowflake:
+
+- `dbt.datediff()` instead of `TIMESTAMP_DIFF` or `DATEDIFF`
+- `dbt.dateadd()` instead of `TIMESTAMP_ADD` or `DATEADD`
+- `dbt_utils.generate_surrogate_key()` for session ID generation
+
+This ensures the same SQL compiles correctly on both platforms.
+
+## �🔮 About GrowthCues
 
 This repository handles the Descriptive Layer of your GTM stack (answering "what happened?") and is 100% open source. It contains the foundational metrics every B2B SaaS company needs.
 

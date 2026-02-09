@@ -223,6 +223,67 @@ models:
           [Formula] COUNT(DISTINCT activity_date) where activity_date > metric_date - 30 days.
           [Context] Frequency indicator. Used in stickiness ratio calculation.
 
+      # --- SESSION METRICS ---
+      - name: n_sessions_daily
+        description: >
+          [Definition] Number of sessions on this date.
+          [Formula] COUNT(*) from fct_sessions where session_start_at date = metric_date.
+          [Context] Measures daily session volume for the account.
+
+      - name: time_on_platform_minutes_daily
+        description: >
+          [Definition] Total time spent on platform on this date in minutes.
+          [Formula] SUM(session_duration_seconds) / 60 where session_start_at date = metric_date.
+          [Context] Measures daily engagement depth. Higher values indicate more time invested.
+
+      - name: n_sessions_7d
+        description: >
+          [Definition] Total sessions in last 7 days.
+          [Formula] COUNT(*) from fct_sessions where session_start_at date > metric_date - 7 days.
+          [Context] Short-term session frequency indicator.
+
+      - name: time_on_platform_minutes_7d
+        description: >
+          [Definition] Total time on platform in last 7 days in minutes.
+          [Formula] SUM(session_duration_seconds) / 60 over 7 day window.
+          [Context] Weekly engagement depth. Useful for detecting usage drops.
+
+      - name: n_sessions_30d
+        description: >
+          [Definition] Total sessions in last 30 days.
+          [Formula] COUNT(*) from fct_sessions where session_start_at date > metric_date - 30 days.
+          [Context] Monthly session frequency. Power accounts have higher values.
+
+      - name: time_on_platform_minutes_30d
+        description: >
+          [Definition] Total time on platform in last 30 days in minutes.
+          [Formula] SUM(session_duration_seconds) / 60 over 30 day window.
+          [Context] Monthly engagement depth. Key indicator of product stickiness.
+
+      - name: avg_daily_sessions_7d
+        description: >
+          [Definition] Average sessions per active day (7-day window).
+          [Formula] n_sessions_7d / active_days_7d.
+          [Context] Measures session intensity. Multiple sessions per day indicates high engagement.
+
+      - name: avg_daily_sessions_30d
+        description: >
+          [Definition] Average sessions per active day (30-day window).
+          [Formula] n_sessions_30d / active_days_30d.
+          [Context] Measures sustained session intensity over monthly period.
+
+      - name: avg_daily_time_on_platform_minutes_7d
+        description: >
+          [Definition] Average time on platform per active day in minutes (7-day window).
+          [Formula] time_on_platform_minutes_7d / active_days_7d.
+          [Context] Daily engagement intensity. Higher values indicate deeper product usage.
+
+      - name: avg_daily_time_on_platform_minutes_30d
+        description: >
+          [Definition] Average time on platform per active day in minutes (30-day window).
+          [Formula] time_on_platform_minutes_30d / active_days_30d.
+          [Context] Sustained daily engagement depth over monthly period.
+
       # --- FLAGS ---
       - name: is_active_daily
         description: >
@@ -252,6 +313,18 @@ models:
           [Definition] Usage Contraction Signal (Churn Warning).
           [Formula] (Sum of events last 7 days) / (Sum of events prior 7 days).
           [Context] <1.0 means usage is declining. <0.5 is a strong churn signal.
+
+      - name: time_on_platform_change_ratio_7d
+        description: >
+          [Definition] Engagement Depth Contraction Signal (Churn Warning).
+          [Formula] (time_on_platform_minutes_7d) / (time_on_platform_minutes_7d from 7 days ago).
+          [Context] <1.0 means time investment is declining. <0.5 indicates users are spending significantly less time in the product.
+
+      - name: session_frequency_change_ratio_7d
+        description: >
+          [Definition] Session Frequency Contraction Signal (Churn Warning).
+          [Formula] (n_sessions_7d) / (n_sessions_7d from 7 days ago).
+          [Context] <1.0 means users are opening the product less frequently. <0.5 is a strong disengagement signal.
 
       # --- RATIOS ---
       - name: account_stickiness_ratio
@@ -387,6 +460,30 @@ models:
           [Formula] SUM(n_events_daily) over 30 day window.
           [Context] Measures overall usage volume. Used to rank users within accounts.
 
+      - name: n_sessions_daily
+        description: >
+          [Definition] Number of sessions started on this day.
+          [Formula] COUNT(*) from fct_sessions where session_start_at date = metric_date.
+          [Context] Measures how many distinct usage sessions the user had today.
+
+      - name: n_sessions_monthly
+        description: >
+          [Definition] Total sessions in the last 30 days.
+          [Formula] SUM(n_sessions_daily) over 30 day window.
+          [Context] Higher session counts indicate more frequent product engagement.
+
+      - name: avg_session_duration_minutes_monthly
+        description: >
+          [Definition] Average session length in minutes over last 30 days.
+          [Formula] AVG(session_duration_seconds / 60) over 30 day window.
+          [Context] Longer sessions typically indicate deeper engagement. Consider product type when interpreting.
+
+      - name: avg_session_length_monthly
+        description: >
+          [Definition] Average number of events per session over last 30 days.
+          [Formula] AVG(events_in_session) over 30 day window.
+          [Context] More events per session indicates higher intensity usage. Power users have higher values.
+
       # --- GTM SIGNALS ---
       - name: usage_rank_in_account
         description: >
@@ -411,6 +508,81 @@ models:
           [Definition] Current Lifecycle State.
           [Formula] Logic based on history: New, Active, Dormant, Resurrected, Churned.
           [Context] Critical for "Growth Accounting" and understanding net user growth.
+
+  - name: fct_sessions
+    description: >
+      [Definition] Sessionized event data table containing one row per user session.
+      A session is a sequence of events by the same user with no more than 30 minutes (configurable) of inactivity between events.
+      [Context] Use this table to analyze session-level patterns like session duration, events per session, and session frequency.
+      Materialized incrementally with partitioning for cost efficiency.
+    tests:
+      # Ensure no negative durations
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "session_duration_seconds >= 0"
+          config:
+            severity: error
+
+      # Ensure session_end_at >= session_start_at
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "session_end_at >= session_start_at"
+          config:
+            severity: error
+
+      # Ensure events_in_session is at least 1
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "events_in_session >= 1"
+          config:
+            severity: error
+    columns:
+      - name: session_id
+        tests: [unique, not_null]
+        description: >
+          [Definition] Unique identifier for each session.
+          [Formula] Surrogate key generated from user_id and user_session_index.
+          [Context] Primary key for the sessions table.
+
+      - name: user_id
+        tests: [not_null]
+        description: >
+          [Definition] Unique User ID.
+          [Formula] From stg_segment_tracks.
+          [Context] Links sessions back to individual users.
+
+      - name: account_id
+        tests: [not_null]
+        description: >
+          [Definition] Unique Account ID.
+          [Formula] From stg_segment_tracks.
+          [Context] Links sessions to accounts/companies. Used for account-level session aggregation.
+
+      - name: session_start_at
+        tests: [not_null]
+        description: >
+          [Definition] Timestamp when the session started.
+          [Formula] MIN(event_at) within the session grouping.
+          [Context] Used for time-based filtering and analysis. Table is partitioned by this field.
+
+      - name: session_end_at
+        tests: [not_null]
+        description: >
+          [Definition] Timestamp when the session ended.
+          [Formula] MAX(event_at) within the session grouping.
+          [Context] Used to calculate session duration and identify session boundaries.
+
+      - name: session_duration_seconds
+        description: >
+          [Definition] Length of the session in seconds.
+          [Formula] DATEDIFF(session_end_at, session_start_at, 'second').
+          [Context] Single-event sessions have duration of 0. Longer durations indicate sustained engagement.
+
+      - name: events_in_session
+        description: >
+          [Definition] Number of events that occurred in this session.
+          [Formula] COUNT(*) within the session grouping.
+          [Context] Higher counts indicate more intensive usage. Power users have more events per session.
 
   - name: dim_accounts
     description: >
