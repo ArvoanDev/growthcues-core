@@ -1,4 +1,8 @@
-{{ config(materialized = 'view') }} 
+{{-
+  config(materialized = 'view',
+    enabled=var('include_pages_in_sessions', true)
+  )
+ }} 
 
 {%- set identity_anonymous_id_field = var('identity_anonymous_id_field', 'anonymous_id') -%}
 {%- set pages_lookback_days = var('pages_lookback_days', 365) -%}
