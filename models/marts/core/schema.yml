@@ -438,6 +438,16 @@ models:
         description: >
           [Context] Volume from the previous month. 
           [Action] Compare with current volume to detect 'Declining Features'.
+      - name: mom_change_pct
+        description: >
+          [Definition] Month-over-Month change in feature usage volume (percentage).
+          [Formula] ((current_month - prev_month) / prev_month) * 100.
+          [Context] Pre-computed trend indicator for feature adoption analysis.
+          [Action] 
+          - > +20%: Feature expanding, growing adoption.
+          - -20% to +20%: Stable usage.
+          - < -20%: Declining feature, investigate reasons.
+          - NULL: First month of usage (no prior data).
 
   - name: fct_user_metrics_daily
     description: >

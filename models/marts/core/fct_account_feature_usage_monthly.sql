@@ -47,7 +47,19 @@ select
     min(u.metric_month) over (partition by u.account_id, u.event_name) as first_used_month,
     
     -- Lag for Trend Analysis (Did usage drop?)
-    lag(u.n_events, 1) over (partition by u.account_id, u.event_name order by u.metric_month) as prev_month_volume
+    lag(u.n_events, 1) over (partition by u.account_id, u.event_name order by u.metric_month) as prev_month_volume,
+    
+    -- Month-over-Month Change %
+    -- Key for identifying Expanding vs Declining features
+    case 
+        when lag(u.n_events, 1) over (partition by u.account_id, u.event_name order by u.metric_month) > 0 
+        then round(
+            (u.n_events - lag(u.n_events, 1) over (partition by u.account_id, u.event_name order by u.metric_month)) 
+            / lag(u.n_events, 1) over (partition by u.account_id, u.event_name order by u.metric_month) * 100, 
+            1
+        )
+        else null 
+    end as mom_change_pct
 
 from monthly_usage u
 left join account_monthly_totals a 
