@@ -1,0 +1,73 @@
+id,user_id,anonymous_id,context_group_id,url,title,timestamp,received_at,sent_at
+page_001,,anon_003,,/,Home Page,2026-01-03 07:55:00,2026-01-03 07:55:01,2026-01-03 07:55:00
+page_002,,anon_003,,/features,Features,2026-01-03 07:58:00,2026-01-03 07:58:01,2026-01-03 07:58:00
+page_003,,anon_003,,/signup,Sign Up,2026-01-03 08:03:00,2026-01-03 08:03:01,2026-01-03 08:03:00
+page_004,user_003,anon_003,account_001,/dashboard,Dashboard,2026-01-03 08:15:00,2026-01-03 08:15:01,2026-01-03 08:15:00
+page_005,user_001,anon_001,account_001,/dashboard,Dashboard,2026-01-01 09:05:00,2026-01-01 09:05:01,2026-01-01 09:05:00
+page_006,user_001,anon_001,account_001,/reports,Reports,2026-01-01 09:12:00,2026-01-01 09:12:01,2026-01-01 09:12:00
+page_007,user_001,anon_001,account_001,/reports/create,Create Report,2026-01-01 09:15:00,2026-01-01 09:15:01,2026-01-01 09:15:00
+page_008,user_002,anon_002,account_001,/dashboard,Dashboard,2026-01-02 10:05:00,2026-01-02 10:05:01,2026-01-02 10:05:00
+page_009,user_002,anon_002,account_001,/settings,Settings,2026-01-02 10:08:00,2026-01-02 10:08:01,2026-01-02 10:08:00
+page_010,user_004,anon_004,account_002,/dashboard,Dashboard,2026-01-05 11:00:00,2026-01-05 11:00:01,2026-01-05 11:00:00
+page_011,user_004,anon_004,account_002,/projects,Projects,2026-01-05 11:05:00,2026-01-05 11:05:01,2026-01-05 11:05:00
+page_012,user_004,anon_004,account_002,/projects/create,Create Project,2026-01-05 11:10:00,2026-01-05 11:10:01,2026-01-05 11:10:00
+page_013,user_005,anon_005,account_002,/dashboard,Dashboard,2026-01-05 15:05:00,2026-01-05 15:05:01,2026-01-05 15:05:00
+page_014,user_001,anon_001,account_001,/integrations,Integrations,2026-01-06 10:00:00,2026-01-06 10:00:01,2026-01-06 10:00:00
+page_015,user_001,anon_001,account_001,/integrations/api,API Setup,2026-01-06 10:05:00,2026-01-06 10:05:01,2026-01-06 10:05:00
+page_016,user_002,anon_002,account_001,/integrations,Integrations,2026-01-06 11:00:00,2026-01-06 11:00:01,2026-01-06 11:00:00
+page_017,user_003,anon_003,account_001,/reports,Reports,2026-01-06 14:00:00,2026-01-06 14:00:01,2026-01-06 14:00:00
+page_018,user_004,anon_004,account_002,/dashboard,Dashboard,2026-01-07 09:00:00,2026-01-07 09:00:01,2026-01-07 09:00:00
+page_019,user_004,anon_004,account_002,/export,Export Data,2026-01-07 09:25:00,2026-01-07 09:25:01,2026-01-07 09:25:00
+page_020,user_006,anon_006,account_003,/dashboard,Dashboard,2026-01-08 10:05:00,2026-01-08 10:05:01,2026-01-08 10:05:00
+page_021,user_007,anon_007,account_003,/dashboard,Dashboard,2026-01-08 14:05:00,2026-01-08 14:05:01,2026-01-08 14:05:00
+page_022,user_001,anon_001,account_001,/dashboard,Dashboard,2026-01-10 09:00:00,2026-01-10 09:00:01,2026-01-10 09:00:00
+page_023,user_001,anon_001,account_001,/analytics,Analytics,2026-01-10 09:25:00,2026-01-10 09:25:01,2026-01-10 09:25:00
+page_024,user_002,anon_002,account_001,/dashboard,Dashboard,2026-01-10 10:00:00,2026-01-10 10:00:01,2026-01-10 10:00:00
+page_025,user_004,anon_004,account_002,/dashboard,Dashboard,2026-01-12 11:00:00,2026-01-12 11:00:01,2026-01-12 11:00:00
+page_026,user_005,anon_005,account_002,/dashboard,Dashboard,2026-01-12 15:00:00,2026-01-12 15:00:01,2026-01-12 15:00:00
+page_027,user_006,anon_006,account_003,/dashboard,Dashboard,2026-01-13 10:00:00,2026-01-13 10:00:01,2026-01-13 10:00:00
+page_028,user_001,anon_001,account_001,/reports,Reports,2026-01-15 09:00:00,2026-01-15 09:00:01,2026-01-15 09:00:00
+page_029,user_001,anon_001,account_001,/reports/123,View Report,2026-01-15 09:12:00,2026-01-15 09:12:01,2026-01-15 09:12:00
+page_030,user_002,anon_002,account_001,/dashboard,Dashboard,2026-01-15 10:00:00,2026-01-15 10:00:01,2026-01-15 10:00:00
+page_031,user_003,anon_003,account_001,/dashboard,Dashboard,2026-01-15 14:00:00,2026-01-15 14:00:01,2026-01-15 14:00:00
+page_032,user_004,anon_004,account_002,/projects,Projects,2026-01-16 09:00:00,2026-01-16 09:00:01,2026-01-16 09:00:00
+page_033,user_004,anon_004,account_002,/team,Team,2026-01-16 09:25:00,2026-01-16 09:25:01,2026-01-16 09:25:00
+page_034,user_008,anon_008,account_002,/dashboard,Dashboard,2026-01-17 11:05:00,2026-01-17 11:05:01,2026-01-17 11:05:00
+page_035,user_006,anon_006,account_003,/dashboard,Dashboard,2026-01-18 10:00:00,2026-01-18 10:00:01,2026-01-18 10:00:00
+page_036,user_007,anon_007,account_003,/dashboard,Dashboard,2026-01-18 14:00:00,2026-01-18 14:00:01,2026-01-18 14:00:00
+page_037,user_001,anon_001,account_001,/dashboard,Dashboard,2026-01-20 09:00:00,2026-01-20 09:00:01,2026-01-20 09:00:00
+page_038,user_001,anon_001,account_001,/billing,Billing,2026-01-20 09:25:00,2026-01-20 09:25:01,2026-01-20 09:25:00
+page_039,user_002,anon_002,account_001,/dashboard,Dashboard,2026-01-20 10:00:00,2026-01-20 10:00:01,2026-01-20 10:00:00
+page_040,user_004,anon_004,account_002,/dashboard,Dashboard,2026-01-22 09:00:00,2026-01-22 09:00:01,2026-01-22 09:00:00
+page_041,user_008,anon_008,account_002,/dashboard,Dashboard,2026-01-22 11:00:00,2026-01-22 11:00:01,2026-01-22 11:00:00
+page_042,user_006,anon_006,account_003,/dashboard,Dashboard,2026-01-23 10:00:00,2026-01-23 10:00:01,2026-01-23 10:00:00
+page_043,user_001,anon_001,account_001,/dashboard,Dashboard,2026-01-25 09:00:00,2026-01-25 09:00:01,2026-01-25 09:00:00
+page_044,user_002,anon_002,account_001,/dashboard,Dashboard,2026-01-25 10:00:00,2026-01-25 10:00:01,2026-01-25 10:00:00
+page_045,user_003,anon_003,account_001,/dashboard,Dashboard,2026-01-25 14:00:00,2026-01-25 14:00:01,2026-01-25 14:00:00
+page_046,user_004,anon_004,account_002,/dashboard,Dashboard,2026-01-27 09:00:00,2026-01-27 09:00:01,2026-01-27 09:00:00
+page_047,user_005,anon_005,account_002,/dashboard,Dashboard,2026-01-27 15:00:00,2026-01-27 15:00:01,2026-01-27 15:00:00
+page_048,user_008,anon_008,account_002,/dashboard,Dashboard,2026-01-27 11:00:00,2026-01-27 11:00:01,2026-01-27 11:00:00
+page_049,user_006,anon_006,account_003,/dashboard,Dashboard,2026-01-28 10:00:00,2026-01-28 10:00:01,2026-01-28 10:00:00
+page_050,user_001,anon_001,account_001,/dashboard,Dashboard,2026-01-30 09:00:00,2026-01-30 09:00:01,2026-01-30 09:00:00
+page_051,user_001,anon_001,account_001,/reports,Reports,2026-01-30 09:25:00,2026-01-30 09:25:01,2026-01-30 09:25:00
+page_052,user_002,anon_002,account_001,/dashboard,Dashboard,2026-01-30 10:00:00,2026-01-30 10:00:01,2026-01-30 10:00:00
+page_053,user_004,anon_004,account_002,/dashboard,Dashboard,2026-02-01 09:00:00,2026-02-01 09:00:01,2026-02-01 09:00:00
+page_054,user_008,anon_008,account_002,/dashboard,Dashboard,2026-02-01 11:00:00,2026-02-01 11:00:01,2026-02-01 11:00:00
+page_055,user_006,anon_006,account_003,/dashboard,Dashboard,2026-02-02 10:00:00,2026-02-02 10:00:01,2026-02-02 10:00:00
+page_056,user_007,anon_007,account_003,/dashboard,Dashboard,2026-02-02 14:00:00,2026-02-02 14:00:01,2026-02-02 14:00:00
+page_057,user_001,anon_001,account_001,/dashboard,Dashboard,2026-02-03 09:00:00,2026-02-03 09:00:01,2026-02-03 09:00:00
+page_058,user_002,anon_002,account_001,/dashboard,Dashboard,2026-02-03 10:00:00,2026-02-03 10:00:01,2026-02-03 10:00:00
+page_059,user_003,anon_003,account_001,/dashboard,Dashboard,2026-02-03 14:00:00,2026-02-03 14:00:01,2026-02-03 14:00:00
+page_060,user_004,anon_004,account_002,/dashboard,Dashboard,2026-02-05 09:00:00,2026-02-05 09:00:01,2026-02-05 09:00:00
+page_061,user_005,anon_005,account_002,/dashboard,Dashboard,2026-02-05 15:00:00,2026-02-05 15:00:01,2026-02-05 15:00:00
+page_062,user_006,anon_006,account_003,/dashboard,Dashboard,2026-02-06 10:00:00,2026-02-06 10:00:01,2026-02-06 10:00:00
+page_063,user_001,anon_001,account_001,/dashboard,Dashboard,2026-02-07 09:00:00,2026-02-07 09:00:01,2026-02-07 09:00:00
+page_064,user_002,anon_002,account_001,/dashboard,Dashboard,2026-02-07 10:00:00,2026-02-07 10:00:01,2026-02-07 10:00:00
+page_065,user_004,anon_004,account_002,/dashboard,Dashboard,2026-02-08 09:00:00,2026-02-08 09:00:01,2026-02-08 09:00:00
+page_066,user_008,anon_008,account_002,/dashboard,Dashboard,2026-02-08 11:00:00,2026-02-08 11:00:01,2026-02-08 11:00:00
+page_067,user_006,anon_006,account_003,/dashboard,Dashboard,2026-02-09 10:00:00,2026-02-09 10:00:01,2026-02-09 10:00:00
+page_068,user_001,anon_001,account_001,/dashboard,Dashboard,2026-02-10 09:00:00,2026-02-10 09:00:01,2026-02-10 09:00:00
+page_069,user_002,anon_002,account_001,/dashboard,Dashboard,2026-02-10 10:00:00,2026-02-10 10:00:01,2026-02-10 10:00:00
+page_070,user_003,anon_003,account_001,/dashboard,Dashboard,2026-02-10 14:00:00,2026-02-10 14:00:01,2026-02-10 14:00:00
+page_071,user_004,anon_004,account_002,/dashboard,Dashboard,2026-02-10 09:00:00,2026-02-10 09:00:01,2026-02-10 09:00:00
+page_072,user_006,anon_006,account_003,/dashboard,Dashboard,2026-02-10 10:00:00,2026-02-10 10:00:01,2026-02-10 10:00:00

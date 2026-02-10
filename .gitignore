@@ -10,3 +10,5 @@ __pycache__/
 .vscode/
 .env
 .env.*integration_tests/profiles.yml
+*.duckdb
+

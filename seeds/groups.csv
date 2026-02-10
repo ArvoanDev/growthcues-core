@@ -1,0 +1,4 @@
+id,group_id,name,created_at,received_at,sent_at
+group_001,account_001,Acme Corp,2025-12-31 00:00:00,2025-12-31 00:00:01,2025-12-31 00:00:00
+group_002,account_002,TechCorp Inc,2026-01-05 00:00:00,2026-01-05 00:00:01,2026-01-05 00:00:00
+group_003,account_003,StartupX,2026-01-08 00:00:00,2026-01-08 00:00:01,2026-01-08 00:00:00
