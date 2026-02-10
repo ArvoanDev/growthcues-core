@@ -675,3 +675,259 @@ models:
           [Definition] Days since user was last active.
           [Formula] DATEDIFF(day, last_seen_at, current_timestamp).
           [Context] Recency indicator. >30 days suggests the user may have churned.
+
+unit_tests:
+  - name: test_sessions_basic_grouping
+    description: >
+      Tests that events within the session timeout window are grouped into the same session,
+      and events beyond the timeout create new sessions.
+    model: fct_sessions
+    overrides:
+      macros:
+        is_incremental: false
+      vars:
+        session_timeout_minutes: 30
+        include_pages_in_sessions: false
+    given:
+      - input: ref('stg_segment_tracks')
+        rows:
+          # Session 1: Two events 10 minutes apart (same session)
+          - {
+              user_id: "user_A",
+              account_id: "acct_001",
+              event_at: "2026-02-10 10:00:00",
+            }
+          - {
+              user_id: "user_A",
+              account_id: "acct_001",
+              event_at: "2026-02-10 10:10:00",
+            }
+          # Session 2: Event 60 minutes later (new session due to 30min timeout)
+          - {
+              user_id: "user_A",
+              account_id: "acct_001",
+              event_at: "2026-02-10 11:10:00",
+            }
+          # User B: Single event (one session)
+          - {
+              user_id: "user_B",
+              account_id: "acct_002",
+              event_at: "2026-02-10 14:00:00",
+            }
+    expect:
+      rows:
+        # Session 1: user_A, 2 events, 10 minutes duration
+        - {
+            user_id: "user_A",
+            account_id: "acct_001",
+            user_session_index: 0,
+            session_start_at: "2026-02-10 10:00:00",
+            session_end_at: "2026-02-10 10:10:00",
+            session_duration_seconds: 600,
+            events_in_session: 2,
+          }
+        # Session 2: user_A, 1 event, 0 duration
+        - {
+            user_id: "user_A",
+            account_id: "acct_001",
+            user_session_index: 1,
+            session_start_at: "2026-02-10 11:10:00",
+            session_end_at: "2026-02-10 11:10:00",
+            session_duration_seconds: 0,
+            events_in_session: 1,
+          }
+        # Session 3: user_B, 1 event, 0 duration
+        - {
+            user_id: "user_B",
+            account_id: "acct_002",
+            user_session_index: 0,
+            session_start_at: "2026-02-10 14:00:00",
+            session_end_at: "2026-02-10 14:00:00",
+            session_duration_seconds: 0,
+            events_in_session: 1,
+          }
+
+  - name: test_sessions_exact_timeout_boundary
+    description: >
+      Tests edge case: events exactly 30 minutes apart should remain in the same session.
+      Only events MORE than 30 minutes apart create a new session.
+    model: fct_sessions
+    overrides:
+      macros:
+        is_incremental: false
+      vars:
+        session_timeout_minutes: 30
+        include_pages_in_sessions: false
+    given:
+      - input: ref('stg_segment_tracks')
+        rows:
+          # Events exactly 30 minutes apart (30 min = not > 30, so same session)
+          - {
+              user_id: "user_A",
+              account_id: "acct_001",
+              event_at: "2026-02-10 10:00:00",
+            }
+          - {
+              user_id: "user_A",
+              account_id: "acct_001",
+              event_at: "2026-02-10 10:30:00",
+            }
+          # Events 31 minutes apart (> 30 min, so new session)
+          - {
+              user_id: "user_B",
+              account_id: "acct_001",
+              event_at: "2026-02-10 10:00:00",
+            }
+          - {
+              user_id: "user_B",
+              account_id: "acct_001",
+              event_at: "2026-02-10 10:31:00",
+            }
+    expect:
+      rows:
+        # user_A: 30 minutes = same session (not > 30 min threshold)
+        - { user_id: "user_A", user_session_index: 0, events_in_session: 2 }
+        # user_B: 31 minutes = new session (> 30 min threshold)
+        - { user_id: "user_B", user_session_index: 0, events_in_session: 1 }
+        - { user_id: "user_B", user_session_index: 1, events_in_session: 1 }
+
+  - name: test_sessions_multiple_users_isolated
+    description: >
+      Tests that sessions are properly isolated by user_id - users don't interfere with each other.
+    model: fct_sessions
+    overrides:
+      macros:
+        is_incremental: false
+      vars:
+        session_timeout_minutes: 30
+        include_pages_in_sessions: false
+    given:
+      - input: ref('stg_segment_tracks')
+        rows:
+          # Interleaved events from two users - each should get their own session
+          - {
+              user_id: "user_A",
+              account_id: "acct_001",
+              event_at: "2026-02-10 10:00:00",
+            }
+          - {
+              user_id: "user_B",
+              account_id: "acct_001",
+              event_at: "2026-02-10 10:01:00",
+            }
+          - {
+              user_id: "user_A",
+              account_id: "acct_001",
+              event_at: "2026-02-10 10:02:00",
+            }
+          - {
+              user_id: "user_B",
+              account_id: "acct_001",
+              event_at: "2026-02-10 10:03:00",
+            }
+    expect:
+      rows:
+        # Each user should have exactly 1 session with 2 events
+        - { user_id: "user_A", user_session_index: 0, events_in_session: 2 }
+        - { user_id: "user_B", user_session_index: 0, events_in_session: 2 }
+
+  - name: test_dim_accounts_basic_aggregation
+    description: >
+      Tests that dim_accounts correctly aggregates user activity by account.
+      Note: current_active_seats is not tested as it depends on current_timestamp().
+    model: dim_accounts
+    given:
+      - input: ref('stg_segment_tracks')
+        rows:
+          # Account 1: 2 users, 3 total events
+          - {
+              user_id: "user_A",
+              account_id: "acct_001",
+              event_at: "2026-01-01 10:00:00",
+            }
+          - {
+              user_id: "user_A",
+              account_id: "acct_001",
+              event_at: "2026-02-10 10:00:00",
+            }
+          - {
+              user_id: "user_B",
+              account_id: "acct_001",
+              event_at: "2026-02-10 11:00:00",
+            }
+          # Account 2: 1 user, 2 events
+          - {
+              user_id: "user_C",
+              account_id: "acct_002",
+              event_at: "2026-01-15 10:00:00",
+            }
+          - {
+              user_id: "user_C",
+              account_id: "acct_002",
+              event_at: "2026-01-16 10:00:00",
+            }
+    expect:
+      rows:
+        - {
+            account_id: "acct_001",
+            first_seen_at: "2026-01-01 10:00:00",
+            last_seen_at: "2026-02-10 11:00:00",
+            lifetime_unique_users: 2,
+          }
+        - {
+            account_id: "acct_002",
+            first_seen_at: "2026-01-15 10:00:00",
+            last_seen_at: "2026-01-16 10:00:00",
+            lifetime_unique_users: 1,
+          }
+
+  - name: test_dim_users_basic_aggregation
+    description: >
+      Tests that dim_users correctly tracks user activity and account associations.
+    model: dim_users
+    given:
+      - input: ref('stg_segment_tracks')
+        rows:
+          # user_A: 3 events across time, associated with acct_001
+          - {
+              user_id: "user_A",
+              account_id: "acct_001",
+              event_at: "2026-01-01 10:00:00",
+            }
+          - {
+              user_id: "user_A",
+              account_id: "acct_001",
+              event_at: "2026-01-15 10:00:00",
+            }
+          - {
+              user_id: "user_A",
+              account_id: "acct_001",
+              event_at: "2026-02-10 10:00:00",
+            }
+          # user_B: 2 events, changed from acct_001 to acct_002
+          - {
+              user_id: "user_B",
+              account_id: "acct_001",
+              event_at: "2026-01-01 12:00:00",
+            }
+          - {
+              user_id: "user_B",
+              account_id: "acct_002",
+              event_at: "2026-02-10 12:00:00",
+            }
+    expect:
+      rows:
+        - {
+            user_id: "user_A",
+            first_seen_at: "2026-01-01 10:00:00",
+            last_seen_at: "2026-02-10 10:00:00",
+            latest_account_id: "acct_001",
+            lifetime_accounts_distinct: 1,
+          }
+        - {
+            user_id: "user_B",
+            first_seen_at: "2026-01-01 12:00:00",
+            last_seen_at: "2026-02-10 12:00:00",
+            latest_account_id: "acct_002",
+            lifetime_accounts_distinct: 2,
+          }

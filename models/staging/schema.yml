@@ -1,0 +1,62 @@
+version: 2
+
+models:
+  - name: stg_segment_tracks
+    description: >
+      Staging model for Segment track events. Transforms raw event data
+      with optional identity stitching and standardized column names.
+    columns:
+      - name: event_id
+        description: Unique identifier for the event
+        tests:
+          - not_null
+          - unique
+      - name: user_id
+        description: User identifier from the event
+      - name: account_id
+        description: Account/group identifier from the event
+      - name: event_name
+        description: Name of the event that occurred
+        tests:
+          - not_null
+      - name: event_at
+        description: Timestamp when the event occurred
+        tests:
+          - not_null
+
+  - name: stg_identity_resolution
+    description: >
+      Maps anonymous IDs to their most recent user IDs for identity stitching.
+      Uses last-touch attribution: if an anonymous_id is associated with multiple user_ids,
+      the most recent user_id (by timestamp) wins.
+
+      Note: This model is only enabled when var('enable_identity_stitching') is true.
+    columns:
+      - name: anonymous_id
+        description: The anonymous identifier (e.g., cookie, device ID)
+        tests:
+          - not_null
+          - unique
+      - name: master_user_id
+        description: The most recent user_id associated with this anonymous_id
+        tests:
+          - not_null
+
+# Note: Unit tests for stg_segment_tracks are not included here because
+# the model uses adapter.get_columns_in_relation() to introspect the source schema,
+# which is not compatible with unit testing framework.
+#
+# Instead, test this model using integration tests with seeds:
+# 1. dbt seed --target dev
+# 2. dbt build --select stg_segment_tracks --target dev
+# 3. dbt test --select stg_segment_tracks --target dev
+#
+# Example tests in UNIT_TESTS.md if you need to add them later.
+
+# Note: Unit tests for stg_identity_resolution are not included here because
+# the model is disabled by default (enable_identity_stitching: false).
+# To test identity stitching:
+# 1. Set enable_identity_stitching: true in dbt_project.yml
+# 2. Run: dbt test --select stg_identity_resolution
+#
+# Example tests in UNIT_TESTS.md if you need to add them later.
