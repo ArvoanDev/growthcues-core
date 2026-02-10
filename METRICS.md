@@ -114,7 +114,7 @@ _Formula: `(Current - Lagged) / Days`. Represents average net daily growth for t
 ### Core Feature Metrics
 
 | Column Name                           | Type    | Definition                                                            | Context                                                      |
-| :------------------------------------ | :------ | :-------------------------------------------------------------------- | :----------------------------------------------------------- | --- | -------------------- | ----- | ----------------------------------------------------------------- | --------------------------------------------------------- |
+| :------------------------------------ | :------ | :-------------------------------------------------------------------- | :----------------------------------------------------------- |
 | **`metric_month`**                    | Date    | The month of observation.                                             | Monthly aggregation period.                                  |
 | **`account_id`**                      | String  | Unique Account ID.                                                    | Links to account dimension.                                  |
 | **`event_name`**                      | String  | The specific feature (event) name.                                    | Identifies which feature is being tracked.                   |
@@ -123,7 +123,8 @@ _Formula: `(Current - Lagged) / Days`. Represents average net daily growth for t
 | **`account_mau`**                     | Integer | **Account Total MAU.** Total active users for the account this month. | Denominator for penetration rate calculation.                |
 | **`feature_penetration_rate`**        | Float   | **Adoption Rate.** % of account users who used this feature.          | <10% = Low adoption. >80% = Power feature. Key for upsell.   |
 | **`first_used_month`**                | Date    | **Adoption Date.** First month this account used this feature.        | Track new feature adoption over time.                        |
-| **`prev_month_volume`**               | Integer | **Prior Month Volume.** Usage volume from previous month.             | Compare with current to detect declining/abandoned features. |     | **`mom_change_pct`** | Float | **Month-over-Month Change.** % change in usage vs previous month. | >+20% = Expanding. <-20% = Declining. NULL = First month. |
+| **`prev_month_volume`**               | Integer | **Prior Month Volume.** Usage volume from previous month.             | Compare with current to detect declining/abandoned features. |
+| **`mom_change_pct`**                  | Float   | **Month-over-Month Change.** % change in usage vs previous month.     | >+20% = Expanding. <-20% = Declining. NULL = First month.    |
 
 **Use Cases:**
 
@@ -131,6 +132,12 @@ _Formula: `(Current - Lagged) / Days`. Represents average net daily growth for t
 - **Expansion Opportunities:** Low penetration_rate (<10%) on valuable features = training/enablement opportunity.
 - **Upsell Signals:** High penetration_rate (>80%) on advanced features = account is power user, ready for upsell.
 - **Product Analytics:** Which features are "sticky" vs. "tried once and abandoned"?
+
+**Performance Considerations:**
+
+- Table size grows as `accounts × events × months`
+- For large-scale deployments (100s+ accounts, 100s+ events), set `min_monthly_feature_events: 10` in `dbt_project.yml` to filter low-volume noise
+- Default includes all events to preserve abandonment detection and opportunity signals
 
 ## 4. User Metrics & Champions (`fct_user_metrics_daily`)
 

@@ -414,6 +414,9 @@ models:
       [Context] Use this table for "Feature Usage Analysis" and "Expansion Opportunities".
       It answers "Which features are they using?", "Are they adopting new features?", 
       and "Have they abandoned any core features?".
+      [Performance] Table size is accounts × events × months. For large-scale deployments,
+      set 'min_monthly_feature_events' variable to filter out low-volume events (e.g., 10-50).
+      Default includes all events to preserve abandonment detection and low-penetration opportunity signals.
     columns:
       - name: metric_month
         description: "[Context] The month of observation."

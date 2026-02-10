@@ -19,16 +19,16 @@ clean-targets: # directories to be removed by 'dbt clean'
 vars:
   # Session configuration
   session_timeout_minutes: 30 # Session timeout duration in minutes
-  include_pages_in_sessions: true # Set to true to include page views in session calculation
+  include_pages_in_sessions: false # Set to true to include page views in session calculation
 
   # Identity stitching configuration
-  enable_identity_stitching: true # Set to false to disable identity stitching (if you don't have anonymous users or identifies table)
+  enable_identity_stitching: false # Set to false to disable identity stitching (if you don't have anonymous users or identifies table)
   identity_anonymous_id_field: "anonymous_id" # Field name for anonymous ID in identity stitching; e.g., anonymous_id (snake_case), anonymousId (camelCase/Segment default), visitor_id, device_id
-  identity_lookback_days: 365 # Number of days to look back for identity resolution data
+  identity_lookback_days: 1500 # Number of days to look back for identity resolution data
 
   # Data lookback windows
-  tracks_lookback_days: 365 # Number of days to look back for tracks/events data
-  pages_lookback_days: 365 # Number of days to look back for pages data
+  tracks_lookback_days: 1500 # Number of days to look back for tracks/events data
+  pages_lookback_days: 1500 # Number of days to look back for pages data
 
   # Account/Group ID field mapping
   group_id: "context_group_id" # Group ID (account_id) field in Segment data; by default, Segment stores this in 'context_group_id' if following standard conventions (B2B Spec)
@@ -38,7 +38,7 @@ vars:
 
   # For local dev with DuckDB seeds, point to 'main' schema where seeds are loaded
   # For production, override to your actual schema: segment_schema: "segment_events"
-  segment_schema: "main"
+  segment_schema: "large_events10"
 
   # Table names follow standard Segment naming convention (tracks, pages, identifies, users, groups)
   # No need to override these - seed files are named to match production table names

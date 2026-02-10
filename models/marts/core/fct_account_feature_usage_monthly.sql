@@ -3,6 +3,8 @@
     materialized='table'
 ) }}
 
+{%- set min_monthly_events = var('min_monthly_feature_events', 0) -%}
+
 with tracks as (
     select * from {{ ref('stg_segment_tracks') }}
 ),
@@ -18,6 +20,11 @@ monthly_usage as (
     from tracks
     where account_id is not null
     group by 1, 2, 3
+    {% if min_monthly_events > 0 %}
+    -- Optional: Filter out low-volume events to reduce table size
+    -- Set via: vars.min_monthly_feature_events in dbt_project.yml
+    having count(*) >= {{ min_monthly_events }}
+    {% endif %}
 ),
 
 -- 2. Bring in Account Context (to calculate penetration rates)
