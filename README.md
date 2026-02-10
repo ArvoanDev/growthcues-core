@@ -55,17 +55,27 @@ See **[METRICS.md](METRICS.md)** for complete definitions and formulas.
 
 ### Installation
 
-**Method 1: dbt Package (Recommended)**
+**Method 1: dbt Package (Recommended)** _[Coming to dbt Hub soon!]_
+
+For now, install via Git:
 
 ```yaml
 # packages.yml
 packages:
-  - package: growthcues/growthcues_core
-    version: 1.0.0
+  - git: "https://github.com/growthcues/growthcues-core.git"
+    revision: main
 ```
 
 ```bash
 dbt deps
+```
+
+Once published on dbt Hub, you'll use:
+
+```yaml
+packages:
+  - package: growthcues/growthcues_core
+    version: 1.0.0
 ```
 
 **Method 2: Clone as Template**
