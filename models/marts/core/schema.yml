@@ -392,6 +392,66 @@ models:
           [Formula] (Current MAU - MAU 30 Days Ago) / 30.
           [Context] Net new active users gained/lost per day in this account over the last month.
 
+      - name: health_segment
+        description: >
+          [Definition] AI-Driven Health Classification (Critical, At-Risk, Stable, Healthy).
+          [Formula] Derived from Stickiness (DAU/MAU), Churn Signals, and Usage Velocity.
+          [Context] Use this for the "Executive Summary" and "Health Score" section of the report.
+          [Action] 
+          - Critical: Immediate intervention required.
+          - At-Risk: Schedule Success Plan review.
+          - Healthy: Look for Expansion/Upsell opportunities.
+
+      - name: health_score
+        description: >
+          [Definition] A 0-100 composite score of account health.
+          [Formula] Weighted average of Stickiness (40%), Volume Retention (40%), and Frequency (20%).
+          [Context] Use this to sort accounts when prioritizing CS outreach.
+
+  - name: fct_account_feature_usage_monthly
+    description: >
+      [Definition] Monthly aggregate of specific feature usage by account.
+      [Context] Use this table for "Feature Usage Analysis" and "Expansion Opportunities".
+      It answers "Which features are they using?", "Are they adopting new features?", 
+      and "Have they abandoned any core features?".
+      [Performance] Table size is accounts × events × months. For large-scale deployments,
+      set 'min_monthly_feature_events' variable to filter out low-volume events (e.g., 10-50).
+      Default includes all events to preserve abandonment detection and low-penetration opportunity signals.
+    columns:
+      - name: metric_month
+        description: "[Context] The month of observation."
+      - name: account_id
+        description: "[Context] The company/account identifier."
+      - name: event_name
+        description: "[Context] The specific feature (event) name."
+      - name: monthly_event_volume
+        description: "[Context] Total times this feature was used this month."
+      - name: monthly_active_users_on_feature
+        description: "[Context] Number of unique users within the account who used this feature this month."
+      - name: account_mau
+        description: "[Context] Total monthly active users for the account (all features combined)."
+      - name: feature_penetration_rate
+        description: >
+          [Definition] % of active users in the account who used this feature.
+          [Action] If < 10% on a core feature, recommend "Training/Enablement".
+          If > 80%, consider "Upsell" or "Power User" status.
+      - name: first_used_month
+        description: "[Context] The first month this account started using this feature."
+      - name: prev_month_volume
+        description: >
+          [Context] Volume from the previous month. 
+          [Action] Compare with current volume to detect 'Declining Features'.
+      - name: mom_change_pct
+        description: >
+          [Definition] Month-over-Month change in feature usage volume (percentage).
+          [Formula] ((current_month - prev_month) / prev_month) * 100.
+          [Context] Pre-computed trend indicator for feature adoption analysis.
+          [Action] 
+          - > +20%: Feature expanding, growing adoption.
+          - -20% to +20%: Stable usage.
+          - < -20%: Declining feature, investigate reasons.
+          - NULL: First month of usage (no prior data).
+
   - name: fct_user_metrics_daily
     description: >
       [Definition] A Snapshot table containing the LATEST metrics for every individual user (Human).

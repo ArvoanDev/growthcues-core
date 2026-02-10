@@ -117,13 +117,14 @@ trends_calculation as (
         lag(time_on_platform_minutes_7d, 7) over (partition by account_id order by metric_date) as time_on_platform_7d_lag_7,
         lag(n_sessions_7d, 7) over (partition by account_id order by metric_date) as n_sessions_7d_lag_7
     from rolling_metrics
-)
+),
 
-select
-    metric_date,
-    account_id,
-    
-    dau, wau, mau,
+base_metrics as (
+    select
+        metric_date,
+        account_id,
+        
+        dau, wau, mau,
     
     -- Convenience Flags
     case when dau > 0 then 1 else 0 end as is_active_daily,
@@ -191,4 +192,36 @@ select
     round((mau - mau_lag_14) / 14.0, 2) as mau_trend_14d,
     round((mau - mau_lag_30) / 30.0, 2) as mau_trend_30d
 
-from trends_calculation
+    from trends_calculation
+),
+
+health_scoring as (
+    select
+        *,
+        
+        -- HEALTH SCORING (For "Analyze Account Health" Skill)
+        -- Logic: 
+        -- 1. Critical: Dormant (Active last month, 0 this week) OR High Churn Signal (<50% usage vs last week)
+        -- 2. At-Risk: Low Stickiness (<20%) OR Declining Usage (<90% usage vs last week)
+        -- 3. Healthy: High Stickiness (>40%) OR Growing Usage (>110% vs last week)
+        
+        case
+            when mau > 0 and wau = 0 then 'Critical - Dormant'
+            when volume_change_ratio_7d < 0.5 then 'Critical - Usage Drop'
+            when user_stickiness_ratio < 0.20 or volume_change_ratio_7d < 0.9 then 'At-Risk'
+            when user_stickiness_ratio >= 0.40 or volume_change_ratio_7d > 1.1 then 'Healthy'
+            else 'Stable'
+        end as health_segment,
+
+        -- COMPOSITE SCORE (0-100)
+        -- Simple heuristic for sorting accounts by health
+        least(100, (
+            (coalesce(user_stickiness_ratio, 0) * 40) + -- 40 pts for Stickiness (1.0 = 40)
+            (least(volume_change_ratio_7d, 1.5) * 40) + -- 40 pts for Retention (1.0 = 40)
+            (least(active_days_7d, 5) * 4)              -- 20 pts for Frequency (5 days = 20)
+        )) as health_score
+    
+    from base_metrics
+)
+
+select * from health_scoring

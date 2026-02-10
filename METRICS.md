@@ -90,7 +90,56 @@ _Formula: `(Current - Lagged) / Days`. Represents average net daily growth for t
 | **time_on_platform_change_ratio_7d**  | **Churn Signal.** Ratio of Time on Platform (Last 7d / Prev 7d). | **Success:** Detect declining engagement depth (\<0.5).            |
 | **session_frequency_change_ratio_7d** | **Churn Signal.** Ratio of Session Count (Last 7d / Prev 7d).    | **Success:** Detect users opening product less frequently (\<0.5). |
 
-## 3. User Metrics & Champions (`fct_user_metrics_daily`)
+### Health Scoring
+
+| Column Name          | Type   | Definition                                                                                                           | Context                                                          |
+| :------------------- | :----- | :------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------- |
+| **`health_segment`** | String | **AI-Driven Health Classification.** One of: Critical - Dormant, Critical - Usage Drop, At-Risk, Stable, or Healthy. | Use for executive summaries and prioritizing interventions.      |
+| **`health_score`**   | Float  | **0-100 Composite Score.** Weighted average: Stickiness (40%) + Volume Retention (40%) + Frequency (20%).            | Sort accounts when prioritizing CS outreach. Higher = Healthier. |
+
+**Health Segment Logic:**
+
+- **Critical - Dormant:** MAU > 0 but WAU = 0 (active last month, zero this week)
+- **Critical - Usage Drop:** volume_change_ratio_7d < 0.5 (usage dropped >50%)
+- **At-Risk:** user_stickiness_ratio < 0.20 OR volume_change_ratio_7d < 0.9
+- **Healthy:** user_stickiness_ratio >= 0.40 OR volume_change_ratio_7d > 1.1
+- **Stable:** Everything else
+
+## 3. Feature Usage Analysis (`fct_account_feature_usage_monthly`)
+
+**Description:** Monthly tracking of specific feature adoption and usage patterns by account.
+
+**Grain:** One row per Account per Feature (event_name) per Month.
+
+### Core Feature Metrics
+
+| Column Name                           | Type    | Definition                                                            | Context                                                      |
+| :------------------------------------ | :------ | :-------------------------------------------------------------------- | :----------------------------------------------------------- |
+| **`metric_month`**                    | Date    | The month of observation.                                             | Monthly aggregation period.                                  |
+| **`account_id`**                      | String  | Unique Account ID.                                                    | Links to account dimension.                                  |
+| **`event_name`**                      | String  | The specific feature (event) name.                                    | Identifies which feature is being tracked.                   |
+| **`monthly_event_volume`**            | Integer | **Total Usage.** Total times this feature was used this month.        | Higher volume = higher adoption.                             |
+| **`monthly_active_users_on_feature`** | Integer | **Feature Users.** Unique users who used this feature this month.     | Breadth of adoption within the account.                      |
+| **`account_mau`**                     | Integer | **Account Total MAU.** Total active users for the account this month. | Denominator for penetration rate calculation.                |
+| **`feature_penetration_rate`**        | Float   | **Adoption Rate.** % of account users who used this feature.          | <10% = Low adoption. >80% = Power feature. Key for upsell.   |
+| **`first_used_month`**                | Date    | **Adoption Date.** First month this account used this feature.        | Track new feature adoption over time.                        |
+| **`prev_month_volume`**               | Integer | **Prior Month Volume.** Usage volume from previous month.             | Compare with current to detect declining/abandoned features. |
+| **`mom_change_pct`**                  | Float   | **Month-over-Month Change.** % change in usage vs previous month.     | >+20% = Expanding. <-20% = Declining. NULL = First month.    |
+
+**Use Cases:**
+
+- **Feature Abandonment Detection:** Compare monthly_event_volume with prev_month_volume. Large drops indicate abandonment.
+- **Expansion Opportunities:** Low penetration_rate (<10%) on valuable features = training/enablement opportunity.
+- **Upsell Signals:** High penetration_rate (>80%) on advanced features = account is power user, ready for upsell.
+- **Product Analytics:** Which features are "sticky" vs. "tried once and abandoned"?
+
+**Performance Considerations:**
+
+- Table size grows as `accounts × events × months`
+- For large-scale deployments (100s+ accounts, 100s+ events), set `min_monthly_feature_events: 10` in `dbt_project.yml` to filter low-volume noise
+- Default includes all events to preserve abandonment detection and opportunity signals
+
+## 4. User Metrics & Champions (`fct_user_metrics_daily`)
 
 **Description:** Snapshot of individual user behavior.  
 **Grain:** One row per User (Latest Snapshot).
@@ -123,7 +172,7 @@ _Formula: `(Current - Lagged) / Days`. Represents average net daily growth for t
 | **distinct_features_used_30d** | **Sophistication.** Unique features used.          | **Product:** Identify power users.                     |
 | **user_lifecycle_status**      | New, Active, Dormant, Resurrected, Churned.        | **Growth:** Retention analysis.                        |
 
-## 4. Session Engagement Metrics (`fct_sessions`)
+## 5. Session Engagement Metrics (`fct_sessions`)
 
 **Description:** Sessionized event data showing engagement patterns.  
 **Grain:** One row per User Session.
@@ -142,7 +191,7 @@ _Formula: `(Current - Lagged) / Days`. Represents average net daily growth for t
 | **`session_duration_seconds`** | Integer   | Length of session in seconds.     | Single-event sessions = 0. Longer = deeper engagement. |
 | **`events_in_session`**        | Integer   | Number of events in this session. | Power users have more events per session.              |
 
-## 5. Dimensions
+## 6. Dimensions
 
 ### Account Dimensions (`dim_accounts`)
 
@@ -175,7 +224,7 @@ _Formula: `(Current - Lagged) / Days`. Represents average net daily growth for t
 | **`days_since_first_seen`**      | User tenure in days.                                  |
 | **`days_since_last_seen`**       | Days since last activity. >30 indicates Churn.        |
 
-## 6. Notes
+## 7. Notes
 
 - All definitions assume a standard activity event log with `user_id`, `account_id`, and `event_timestamp`.
 - Adjust definitions as needed to fit your specific product and data model.
