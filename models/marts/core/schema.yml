@@ -831,6 +831,169 @@ unit_tests:
         - { user_id: "user_A", user_session_index: 0, events_in_session: 2 }
         - { user_id: "user_B", user_session_index: 0, events_in_session: 2 }
 
+  - name: test_sessions_with_pages_combined
+    description: >
+      Tests that track events and page views are combined into sessions when include_pages_in_sessions is true.
+      Session timeout applies to both event types.
+    model: fct_sessions
+    overrides:
+      macros:
+        is_incremental: false
+      vars:
+        session_timeout_minutes: 30
+        include_pages_in_sessions: true
+    given:
+      - input: ref('stg_segment_tracks')
+        rows:
+          # Track event at 10:00
+          - {
+              user_id: "user_A",
+              account_id: "acct_001",
+              event_at: "2026-02-10 10:00:00",
+            }
+          # Track event at 10:20 (same session)
+          - {
+              user_id: "user_A",
+              account_id: "acct_001",
+              event_at: "2026-02-10 10:20:00",
+            }
+      - input: ref('stg_segment_pages')
+        rows:
+          # Page view at 10:10 (between the two tracks, same session)
+          - {
+              user_id: "user_A",
+              account_id: "acct_001",
+              page_viewed_at: "2026-02-10 10:10:00",
+            }
+          # Page view at 11:00 (40 min after last event = new session)
+          - {
+              user_id: "user_A",
+              account_id: "acct_001",
+              page_viewed_at: "2026-02-10 11:00:00",
+            }
+    expect:
+      rows:
+        # Session 1: 2 tracks + 1 page = 3 events, 20 min duration
+        - {
+            user_id: "user_A",
+            user_session_index: 0,
+            events_in_session: 3,
+            session_start_at: "2026-02-10 10:00:00",
+            session_end_at: "2026-02-10 10:20:00",
+            session_duration_seconds: 1200,
+          }
+        # Session 2: 1 page = 1 event, 0 duration
+        - {
+            user_id: "user_A",
+            user_session_index: 1,
+            events_in_session: 1,
+            session_start_at: "2026-02-10 11:00:00",
+            session_end_at: "2026-02-10 11:00:00",
+            session_duration_seconds: 0,
+          }
+
+  - name: test_sessions_pages_only
+    description: >
+      Tests that sessions can be created from page views alone when no track events exist.
+    model: fct_sessions
+    overrides:
+      macros:
+        is_incremental: false
+      vars:
+        session_timeout_minutes: 30
+        include_pages_in_sessions: true
+    given:
+      - input: ref('stg_segment_tracks')
+        rows: []
+      - input: ref('stg_segment_pages')
+        rows:
+          # Three pages: first two within timeout (same session), third beyond timeout (new session)
+          - {
+              user_id: "user_A",
+              account_id: "acct_001",
+              page_viewed_at: "2026-02-10 10:00:00",
+            }
+          - {
+              user_id: "user_A",
+              account_id: "acct_001",
+              page_viewed_at: "2026-02-10 10:15:00",
+            }
+          - {
+              user_id: "user_A",
+              account_id: "acct_001",
+              page_viewed_at: "2026-02-10 11:00:00",
+            }
+    expect:
+      rows:
+        # Session 1: 2 pages, 15 min duration
+        - {
+            user_id: "user_A",
+            user_session_index: 0,
+            events_in_session: 2,
+            session_duration_seconds: 900,
+          }
+        # Session 2: 1 page, 0 duration
+        - {
+            user_id: "user_A",
+            user_session_index: 1,
+            events_in_session: 1,
+            session_duration_seconds: 0,
+          }
+
+  - name: test_sessions_interleaved_events
+    description: >
+      Tests proper ordering and session grouping when track and page events are interleaved.
+    model: fct_sessions
+    overrides:
+      macros:
+        is_incremental: false
+      vars:
+        session_timeout_minutes: 30
+        include_pages_in_sessions: true
+    given:
+      - input: ref('stg_segment_tracks')
+        rows:
+          - {
+              user_id: "user_A",
+              account_id: "acct_001",
+              event_at: "2026-02-10 10:00:00",
+            }
+          - {
+              user_id: "user_A",
+              account_id: "acct_001",
+              event_at: "2026-02-10 10:10:00",
+            }
+          - {
+              user_id: "user_A",
+              account_id: "acct_001",
+              event_at: "2026-02-10 10:20:00",
+            }
+      - input: ref('stg_segment_pages')
+        rows:
+          - {
+              user_id: "user_A",
+              account_id: "acct_001",
+              page_viewed_at: "2026-02-10 10:05:00",
+            }
+          - {
+              user_id: "user_A",
+              account_id: "acct_001",
+              page_viewed_at: "2026-02-10 10:15:00",
+            }
+    expect:
+      rows:
+        # All 5 events (3 tracks + 2 pages) should be in one session
+        # Chronological order: 10:00, 10:05, 10:10, 10:15, 10:20
+        # Duration: 20 minutes (10:00 to 10:20)
+        - {
+            user_id: "user_A",
+            user_session_index: 0,
+            events_in_session: 5,
+            session_start_at: "2026-02-10 10:00:00",
+            session_end_at: "2026-02-10 10:20:00",
+            session_duration_seconds: 1200,
+          }
+
   - name: test_dim_accounts_basic_aggregation
     description: >
       Tests that dim_accounts correctly aggregates user activity by account.

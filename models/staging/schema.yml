@@ -50,13 +50,17 @@ models:
 # 1. dbt seed --target dev
 # 2. dbt build --select stg_segment_tracks --target dev
 # 3. dbt test --select stg_segment_tracks --target dev
-#
-# Example tests in UNIT_TESTS.md if you need to add them later.
 
 # Note: Unit tests for stg_identity_resolution are not included here because
-# the model is disabled by default (enable_identity_stitching: false).
-# To test identity stitching:
-# 1. Set enable_identity_stitching: true in dbt_project.yml
-# 2. Run: dbt test --select stg_identity_resolution
+# the model uses dbt.dateadd() and dbt.current_timestamp() in WHERE clauses,
+# which are not properly handled by the unit test framework's compilation context.
 #
-# Example tests in UNIT_TESTS.md if you need to add them later.
+# Instead, test this model using integration tests with seeds:
+# 1. dbt seed --target dev (includes identifies.csv with identity mappings)
+# 2. dbt build --select stg_identity_resolution --target dev
+# 3. dbt test --select stg_identity_resolution --target dev
+#
+# The integration tests with seeds will validate:
+# - Last-touch attribution (most recent user_id wins for each anonymous_id)
+# - Filtering of null user_ids
+# - Multiple identity mappings over time

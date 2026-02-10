@@ -11,7 +11,8 @@ Unit tests validate transformation logic in isolation by providing mock input da
 **⚠️ Important Notes:**
 
 - `stg_segment_tracks` is NOT covered by unit tests because it uses `adapter.get_columns_in_relation()` which is incompatible with the unit test framework. Use integration tests with seeds instead.
-- `stg_identity_resolution` tests are not included because the model is disabled by default (`enable_identity_stitching: false`). To test identity stitching, enable the feature and use integration tests.
+- `stg_segment_pages` is NOT covered by unit tests for the same reason as stg_segment_tracks. Use integration tests with seeds instead.
+- `stg_identity_resolution` is NOT covered by unit tests because it uses `dbt.dateadd()` and `dbt.current_timestamp()` in WHERE clauses which aren't properly handled in unit test compilation. Use integration tests with seeds instead.
 
 **Core Models** (`models/marts/core/schema.yml`):
 
@@ -19,6 +20,9 @@ Unit tests validate transformation logic in isolation by providing mock input da
   - `test_sessions_basic_grouping` - Tests session timeout window logic (events within 30 min = same session, beyond = new session)
   - `test_sessions_exact_timeout_boundary` - Edge case: events exactly 30 minutes apart remain in the SAME session (logic is `> 30` not `>= 30`)
   - `test_sessions_multiple_users_isolated` - Ensures sessions are isolated by user_id
+  - `test_sessions_with_pages_combined` - Tests that track events and page views are combined into sessions when `include_pages_in_sessions: true`
+  - `test_sessions_pages_only` - Tests sessions created from page views alone (no track events)
+  - `test_sessions_interleaved_events` - Tests proper ordering and session grouping when tracks and pages are interleaved
 
 - **Dimension Tables**:
   - `test_dim_accounts_basic_aggregation` - Account-level metrics aggregation (excludes `current_active_seats` which depends on `current_timestamp()`)
