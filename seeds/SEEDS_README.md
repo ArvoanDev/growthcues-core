@@ -8,11 +8,13 @@ The seed files replicate the standard Segment event tracking schema and provide 
 
 ### Seed Files
 
-- **segment_tracks.csv** - Event tracking data (78 events)
-- **segment_pages.csv** - Page view data (72 page views)
-- **segment_identifies.csv** - Anonymous ID to user ID mappings (8 identify calls)
-- **segment_users.csv** - User profile data (8 users)
-- **segment_groups.csv** - Account/organization data (3 accounts)
+Seed files use standard Segment table naming convention:
+
+- **tracks.csv** - Event tracking data (78 events)
+- **pages.csv** - Page view data (72 page views)
+- **identifies.csv** - Anonymous ID to user ID mappings (8 identify calls)
+- **users.csv** - User profile data (8 users)
+- **groups.csv** - Account/organization data (3 accounts)
 
 ### Test Scenarios Covered
 
@@ -46,7 +48,7 @@ The seed data is designed to test:
 
 ### 1. Configure Your dbt Profile
 
-Ensure your `profiles.yml` is configured to use DuckDB for the `dev` target. Example profile configuration:
+Ensure your `profiles.yml` is configured to use DuckDB for the `dev` target:
 
 ```yaml
 growthcues_core:
@@ -55,33 +57,18 @@ growthcues_core:
     dev:
       type: duckdb
       path: "growthcues.duckdb"
-      schema: segment_events
+      schema: "main"
       threads: 4
 ```
 
-The profile can be in:
+The profile should be in:
 
-- `~/.dbt/profiles.yml` (user-level)
+- `~/.dbt/profiles.yml` (user-level, recommended)
 - `./profiles.yml` (project-level, gitignored)
 
-### 2. Configure Source Table Names
+**Note:** The seed files use standard Segment table names (`tracks`, `pages`, etc.) and the `dbt_project.yml` is configured to look in the `main` schema where DuckDB seeds are loaded. This works out-of-the-box for local development.
 
-Add the following to your `dbt_project.yml` to point dbt to the seed tables. Since seeds are loaded into the `main` schema with names like `segment_tracks`, you need to configure the source variables:
-
-```yaml
-vars:
-  # Point to seed tables in main schema
-  segment_schema: "main"
-  segment_tracks_table: "segment_tracks"
-  segment_pages_table: "segment_pages"
-  segment_identifies_table: "segment_identifies"
-  segment_users_table: "segment_users"
-  segment_groups_table: "segment_groups"
-```
-
-Add these vars to your existing `dbt_project.yml` under the `vars:` section.
-
-### 3. Load the Seed Data
+### 2. Load the Seed Data
 
 Run the following command to load seed data into your DuckDB database:
 
@@ -91,15 +78,15 @@ dbt seed --target dev
 
 This will create the following tables in the `main` schema:
 
-- `main.segment_tracks`
-- `main.segment_pages`
-- `main.segment_identifies`
-- `main.segment_users`
-- `main.segment_groups`
+- `main.tracks`
+- `main.pages`
+- `main.identifies`
+- `main.users`
+- `main.groups`
 
-### 4. Run the Models
+### 3. Run the Models
 
-After seeding and configuring the vars, run the dbt models:
+After seeding, run the dbt models:
 
 ```bash
 # Run all models
@@ -110,7 +97,7 @@ dbt run --target dev --select staging
 dbt run --target dev --select marts.core
 ```
 
-### 5. Test the Models
+### 4. Test the Models
 
 Run dbt tests to verify data quality:
 
@@ -118,7 +105,7 @@ Run dbt tests to verify data quality:
 dbt test --target dev
 ```
 
-### 6. Query Your Data
+### 5. Query Your Data
 
 You can query the DuckDB database directly:
 
@@ -169,18 +156,12 @@ FROM dim_users;
 
 ## Configuration Variables
 
-For the seed data to work, you need to configure your `dbt_project.yml` with the following variables:
+The source table configuration is handled in `profiles.yml` under each target's `vars:` section (see Setup Step 1 above). This allows different table names per target (dev vs prod).
+
+Additional configuration in `dbt_project.yml`:
 
 ```yaml
 vars:
-  # REQUIRED: Point to seed tables
-  segment_schema: "main"
-  segment_tracks_table: "segment_tracks"
-  segment_pages_table: "segment_pages"
-  segment_identifies_table: "segment_identifies"
-  segment_users_table: "segment_users"
-  segment_groups_table: "segment_groups"
-
   # Session configuration
   session_timeout_minutes: 30
   include_pages_in_sessions: false # Set to true to include page views
@@ -214,6 +195,27 @@ Then re-run:
 dbt run --target dev --select stg_identity_resolution+
 ```
 
+## Using with Production Data
+
+The `dbt_project.yml` is configured by default to use the `main` schema for local development. When you're ready to use this with production Segment data, simply override the schema:
+
+### Option 1: Override via CLI
+
+```bash
+dbt run --target prod --vars '{"segment_schema": "segment_events"}'
+```
+
+### Option 2: Update dbt_project.yml
+
+Change the `segment_schema` var in your `dbt_project.yml`:
+
+```yaml
+vars:
+  segment_schema: "segment_events" # or your actual schema name
+```
+
+Table names don't need to be overridden since seeds use the standard Segment naming convention.
+
 ## Resetting Your Environment
 
 To start fresh:
@@ -239,21 +241,6 @@ To add more test data:
 ## Differences from Integration Test Seeds
 
 The seeds in this directory (`seeds/`) are separate from integration test seeds (`integration_tests/seeds/`):
-Table with name tracks does not exist" error
-
-This means dbt is looking for tables in the wrong schema or with the wrong names. Make sure you've added the source configuration vars to your `dbt_project.yml`:
-
-```yaml
-vars:
-  segment_schema: "main"
-  segment_tracks_table: "segment_tracks"
-  segment_pages_table: "segment_pages"
-  segment_identifies_table: "segment_identifies"
-  segment_users_table: "segment_users"
-  segment_groups_table: "segment_groups"
-```
-
-### "
 
 - **Development seeds** (this directory): For local development, unit testing, and exploring the models
 - **Integration test seeds** (`integration_tests/`): For CI/CD and package testing
@@ -261,6 +248,12 @@ vars:
 Both sets of seeds follow the same schema but may contain different data patterns or volumes.
 
 ## Troubleshooting
+
+### "Table with name tracks does not exist" error
+
+Make sure you've run `dbt seed --target dev` first to create the tables in the `main` schema.
+
+If you're trying to use production data, make sure to override the `segment_schema` var to point to your actual schema (see "Using with Production Data" section above).
 
 ### "Relation not found" errors
 
@@ -276,11 +269,7 @@ DuckDB should automatically parse the timestamp format `YYYY-MM-DD HH:MM:SS`. If
 
 ### Schema not found
 
-Ensure your `profiles.yml` specifies the correct schema:
-
-```yaml
-schema: segment_events # Must match source configuration
-```
+Ensure your `profiles.yml` dev target specifies `schema: "main"` (not `segment_events`) since that's where dbt seeds load data in DuckDB.
 
 ### No data in fact tables
 
