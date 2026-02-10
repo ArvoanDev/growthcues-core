@@ -1,0 +1,9 @@
+id,user_id,email,created_at,context_group_id,received_at,sent_at
+user_001,user_001,alice@acme.com,2025-12-31 09:00:00,account_001,2025-12-31 09:00:01,2025-12-31 09:00:00
+user_002,user_002,bob@acme.com,2026-01-02 10:00:00,account_001,2026-01-02 10:00:01,2026-01-02 10:00:00
+user_003,user_003,charlie@acme.com,2026-01-03 08:10:00,account_001,2026-01-03 08:10:01,2026-01-03 08:10:00
+user_004,user_004,diana@techcorp.com,2026-01-05 11:00:00,account_002,2026-01-05 11:00:01,2026-01-05 11:00:00
+user_005,user_005,edward@techcorp.com,2026-01-05 15:00:00,account_002,2026-01-05 15:00:01,2026-01-05 15:00:00
+user_006,user_006,frank@startupx.io,2026-01-08 10:00:00,account_003,2026-01-08 10:00:01,2026-01-08 10:00:00
+user_007,user_007,grace@startupx.io,2026-01-08 14:00:00,account_003,2026-01-08 14:00:01,2026-01-08 14:00:00
+user_008,user_008,henry@techcorp.com,2026-01-17 11:00:00,account_002,2026-01-17 11:00:01,2026-01-17 11:00:00

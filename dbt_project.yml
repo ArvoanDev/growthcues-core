@@ -42,6 +42,15 @@ vars:
   # segment_users_table: "users"  # Override if your users table has a different name
   # segment_groups_table: "groups"  # Override if your groups table has a different name
 
+  # Point to seed tables for testing (these will be overridden in the integration_tests/dbt_project.yml to point to the in-memory DuckDB seeds)
+  # For production use, these should point to your actual source tables in your data warehouse
+  # For integration tests, these will point to the seed tables which are loaded into the target schema/database by dbt before tests run
+  segment_schema: "main"
+  segment_tracks_table: "segment_tracks"
+  segment_pages_table: "segment_pages"
+  segment_identifies_table: "segment_identifies"
+  segment_users_table: "segment_users"
+  segment_groups_table: "segment_groups"
 models:
   growthcues_core:
     # Config for all models in the project
