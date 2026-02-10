@@ -447,7 +447,33 @@ After changing these values, run `dbt run --full-refresh` to recalculate all ses
 
 ### Step 8: Run the Models
 
-Now you're ready to build your metrics tables! Run:
+Now you're ready to build your metrics tables!
+
+**Using Make (Recommended):**
+
+The project includes a `Makefile` with convenient shortcuts:
+
+```bash
+# Full setup (install dependencies + load seed data)
+make setup
+
+# Build all models and run all tests
+make build
+
+# Run only unit tests (fast)
+make test-unit
+
+# Run all tests
+make test
+
+# Clean and rebuild everything
+make fresh
+
+# See all available commands
+make help
+```
+
+**Using dbt directly:**
 
 ```bash
 dbt run
@@ -1048,6 +1074,97 @@ Sessionization uses window functions (`LAG()`, `ROW_NUMBER()`, `SUM() OVER()`), 
 - Run `dbt run --models fct_sessions` and check the logs for execution time
 - Compare incremental vs full-refresh timing to validate your incremental strategy is working
 - If builds are slower than expected, review the dbt docs on incremental model optimization for your warehouse
+
+## 🛠 Development
+
+### Using the Makefile
+
+The project includes a comprehensive `Makefile` that simplifies common development workflows:
+
+```bash
+# Setup and dependencies
+make setup          # Full setup: install deps + seed data
+make deps           # Install dbt dependencies only
+make seed           # Load seed data only
+
+# Building
+make build          # Build all models and run all tests
+make run            # Run all models (without tests)
+make run-staging    # Run only staging models
+make run-marts      # Run only marts models
+
+# Testing
+make test           # Run all tests (unit + data quality)
+make test-unit      # Run only unit tests (fast)
+make test-data      # Run only data quality tests
+make test-sessions  # Run sessionization tests
+
+# Cleanup
+make clean          # Clean compiled artifacts
+make clean-all      # Clean everything including dependencies
+
+# Documentation
+make docs           # Generate and serve documentation
+make docs-generate  # Generate documentation only
+
+# Development shortcuts
+make fresh          # Clean + setup + build (fresh start)
+make help           # Show all available commands
+```
+
+### Local Development with DuckDB
+
+For local development and testing, the project includes seed data that works with DuckDB:
+
+1. **Install DuckDB adapter:**
+
+   ```bash
+   pip install dbt-duckdb
+   ```
+
+2. **Setup dev environment:**
+
+   ```bash
+   make setup  # or: dbt deps && dbt seed --target dev
+   ```
+
+3. **Run unit tests:**
+
+   ```bash
+   make test-unit  # or: dbt test --select test_type:unit --target dev
+   ```
+
+4. **Build and test everything:**
+   ```bash
+   make build  # or: dbt build --target dev
+   ```
+
+See [seeds/SEEDS_README.md](seeds/SEEDS_README.md) for details on the seed data structure.
+
+### Unit Testing
+
+The project uses dbt's native unit testing feature (v1.8+) to validate transformation logic:
+
+- **8 unit tests** covering sessionization, dimension aggregations, and page event handling
+- Tests run in **~0.75 seconds**, making them ideal for rapid development
+- See [models/UNIT_TESTS.md](models/UNIT_TESTS.md) for complete documentation
+
+```bash
+# Run all unit tests
+make test-unit
+
+# Run tests for a specific model
+dbt test --select fct_sessions,test_type:unit --target dev
+```
+
+### Contributing
+
+Contributions are welcome! When submitting PRs:
+
+1. Add unit tests for new transformation logic
+2. Update documentation in schema.yml files
+3. Run `make test` to ensure all tests pass
+4. Run `make docs-generate` to verify documentation builds
 
 ## ✨🔮 About GrowthCues
 
