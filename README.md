@@ -16,16 +16,17 @@ A dbt project to calculate **Account-Level** and **Product-Level** metrics from 
 
 Most analytics tools focus only on Users. B2B businesses need to track **Accounts**. This project handles both.
 
-### Six Core Tables
+### Seven Core Tables
 
-It produces six critical tables in your warehouse:
+It produces seven critical tables in your warehouse:
 
 1. **`fct_product_metrics_daily`** - Global DAU/WAU/MAU and Account volume (DAA/WAA/MAA) with velocity trends
-2. **`fct_account_metrics_daily`** - Account-level health metrics: stickiness, feature breadth, churn risk
-3. **`fct_user_metrics_daily`** - User-level behavior: champions, admin proxy flags, lifecycle status
-4. **`fct_sessions`** - Sessionized engagement data with duration and event counts
-5. **`dim_accounts`** - Master account dimension table
-6. **`dim_users`** - Master user dimension table
+2. **`fct_account_metrics_daily`** - Account-level health metrics: stickiness, feature breadth, churn risk, health scoring
+3. **`fct_account_feature_usage_monthly`** - Feature-level adoption and penetration tracking per account
+4. **`fct_user_metrics_daily`** - User-level behavior: champions, admin proxy flags, lifecycle status
+5. **`fct_sessions`** - Sessionized engagement data with duration and event counts
+6. **`dim_accounts`** - Master account dimension table
+7. **`dim_users`** - Master user dimension table
 
 See **[METRICS.md](METRICS.md)** for complete definitions and formulas.
 
@@ -37,6 +38,8 @@ See **[METRICS.md](METRICS.md)** for complete definitions and formulas.
 - **B2B Standard** - Compatible with Segment/Rudderstack. Requires `context_group_id` for account identification (customizable)
 - **Identity Stitching** - Links anonymous visitor activity to authenticated users for complete customer journey visibility. [Learn more →](docs/IDENTITY_STITCHING.md)
 - **Smart Sessionization** - Groups events into meaningful sessions with configurable timeout windows. [Learn more →](docs/SESSIONIZATION.md)
+- **Feature-Level Analysis** - Track which specific features each account uses, adoption rates, and abandonment patterns
+- **Health Scoring** - Pre-computed health segments and 0-100 composite scores for prioritizing CS/sales outreach
 - **Three-Level Granularity** - Metrics at Product, Account, and User levels
 - **AI-Ready Schema** - Specialized documentation designed to ground LLMs and prevent hallucinations
 
