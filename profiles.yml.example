@@ -1,0 +1,92 @@
+# Example dbt profiles configuration for GrowthCues Core
+# Copy this file to ~/.dbt/profiles.yml and customize for your environment
+
+# Profile name must match 'profile:' in dbt_project.yml
+growthcues_core:
+  target: dev
+  outputs:
+    # -------------------------------------------------------------------------
+    # LOCAL DEV (DuckDB) - Fast, Free, No Setup
+    # Run with: dbt build --target dev
+    # -------------------------------------------------------------------------
+    dev:
+      type: duckdb
+      path: "growthcues.duckdb"
+      schema: "main"
+      threads: 4
+
+    # -------------------------------------------------------------------------
+    # CI / INTEGRATION TESTS (BigQuery) - Isolated Environment
+    # Run with: dbt build --target ci
+    # -------------------------------------------------------------------------
+    ci:
+      type: bigquery
+      method: service-account
+      project: YOUR_GCP_PROJECT_ID  # e.g., my-company-analytics-123
+      dataset: growthcues_ci        # Isolated dataset for CI/testing
+      threads: 4
+      keyfile: /path/to/your/service-account-key.json
+      location: us-east1            # or your GCP region: EU, asia-northeast1, etc.
+      priority: interactive
+      retries: 1
+
+    # -------------------------------------------------------------------------
+    # PRODUCTION (BigQuery) - The Real Data
+    # Run with: dbt build --target prod
+    # -------------------------------------------------------------------------
+    prod:
+      type: bigquery
+      method: service-account
+      project: YOUR_GCP_PROJECT_ID  # e.g., my-company-analytics-123
+      dataset: growthcues_prod      # Where your production models will be created
+      threads: 4
+      keyfile: /path/to/your/service-account-key.json
+      location: us-east1            # or your GCP region
+      priority: interactive
+      retries: 1
+      # Note: You'll also need to set segment_schema var to point to your raw Segment data
+      # Either via CLI: --vars '{"segment_schema": "segment_production"}'
+      # Or in dbt_project.yml
+
+    # -------------------------------------------------------------------------
+    # SNOWFLAKE (Optional)
+    # -------------------------------------------------------------------------
+    # snowflake:
+    #   type: snowflake
+    #   account: YOUR_ACCOUNT.us-east-1  # e.g., abc12345.us-east-1
+    #   user: YOUR_USERNAME
+    #   password: YOUR_PASSWORD          # Or use authenticator: externalbrowser
+    #   role: YOUR_ROLE                  # e.g., ANALYST
+    #   database: YOUR_DATABASE          # e.g., ANALYTICS
+    #   warehouse: YOUR_WAREHOUSE        # e.g., COMPUTE_WH
+    #   schema: growthcues_prod          # Where models will be created
+    #   threads: 4
+
+    # -------------------------------------------------------------------------
+    # REDSHIFT (Optional)
+    # -------------------------------------------------------------------------
+    # redshift:
+    #   type: redshift
+    #   host: YOUR_CLUSTER.REGION.redshift.amazonaws.com
+    #   port: 5439
+    #   user: YOUR_USERNAME
+    #   password: YOUR_PASSWORD
+    #   dbname: YOUR_DATABASE
+    #   schema: growthcues_prod
+    #   threads: 4
+
+# -------------------------------------------------------------------------
+# Integration Tests Profile (if using integration_tests/ directory)
+# -------------------------------------------------------------------------
+integration_tests:
+  target: ci
+  outputs:
+    ci:
+      type: duckdb
+      path: ":memory:"  # In-memory for fast CI tests
+      threads: 4
+
+    dev:
+      type: duckdb
+      path: "integration_test.duckdb"  # File-based for local debugging
+      threads: 4

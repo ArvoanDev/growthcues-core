@@ -48,7 +48,14 @@ The seed data is designed to test:
 
 ### 1. Configure Your dbt Profile
 
-Ensure your `profiles.yml` is configured to use DuckDB for the `dev` target:
+Copy the example profile configuration:
+
+```bash
+cp profiles.yml.example ~/.dbt/profiles.yml
+# Or if you prefer project-level: cp profiles.yml.example profiles.yml
+```
+
+The minimal configuration for local dev with DuckDB:
 
 ```yaml
 growthcues_core:
@@ -61,10 +68,7 @@ growthcues_core:
       threads: 4
 ```
 
-The profile should be in:
-
-- `~/.dbt/profiles.yml` (user-level, recommended)
-- `./profiles.yml` (project-level, gitignored)
+See [profiles.yml.example](../profiles.yml.example) for complete examples including BigQuery, Snowflake, and other warehouses.
 
 **Note:** The seed files use standard Segment table names (`tracks`, `pages`, etc.) and the `dbt_project.yml` is configured to look in the `main` schema where DuckDB seeds are loaded. This works out-of-the-box for local development.
 
