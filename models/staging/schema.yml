@@ -1,6 +1,36 @@
 version: 2
 
 models:
+  - name: stg_tracks
+    description: >
+      Router model. Delegates to stg_segment_tracks or stg_posthog_tracks based on
+      var('tracking_provider', 'segment'). All downstream marts reference this model
+      so that switching providers requires only a single variable change.
+    columns:
+      - name: event_id
+        description: Unique identifier for the event
+        tests:
+          - not_null
+          - unique
+      - name: user_id
+        description: Resolved user identifier
+      - name: account_id
+        description: Account/group identifier
+      - name: event_name
+        description: Name of the event
+        tests:
+          - not_null
+      - name: event_at
+        description: Timestamp when the event occurred
+        tests:
+          - not_null
+
+  - name: stg_pages
+    description: >
+      Router model. Delegates to stg_segment_pages or stg_posthog_pages based on
+      var('tracking_provider', 'segment'). Only materialized when
+      var('include_pages_in_sessions') is true.
+
   - name: stg_segment_tracks
     description: >
       Staging model for Segment track events. Transforms raw event data
@@ -23,6 +53,39 @@ models:
         description: Timestamp when the event occurred
         tests:
           - not_null
+
+  - name: stg_posthog_tracks
+    description: >
+      Staging model for PostHog track events (via Batch Exports). Filters out
+      $pageview and $identify events, maps the single-table schema to standard
+      GrowthCues columns, and extracts account_id from the $groups JSON property.
+      Only enabled when var('tracking_provider') = 'posthog'.
+    columns:
+      - name: event_id
+        description: Unique event identifier (PostHog uuid)
+        tests:
+          - not_null
+          - unique
+      - name: user_id
+        description: Resolved user identity (PostHog distinct_id)
+      - name: account_id
+        description: >
+          Account identifier extracted from properties.$groups.<posthog_group_type>
+      - name: event_name
+        description: Name of the PostHog event
+        tests:
+          - not_null
+      - name: event_at
+        description: Event timestamp
+        tests:
+          - not_null
+
+  - name: stg_posthog_pages
+    description: >
+      Staging model for PostHog pageview events (via Batch Exports). Filters to
+      $pageview events only, extracts URL/path/referrer from the JSON properties blob,
+      and maps account_id from $groups. Only enabled when
+      var('tracking_provider') = 'posthog' and var('include_pages_in_sessions') = true.
 
   - name: stg_identity_resolution
     description: >

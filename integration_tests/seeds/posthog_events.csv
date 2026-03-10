@@ -1,0 +1,11 @@
+uuid,event,properties,distinct_id,timestamp
+posthog_evt_001,Button Clicked,"{""button_name"": ""Export CSV"", ""$groups"": {""company"": ""account_001""}}",user_ph_001,2024-01-01 09:00:00
+posthog_evt_002,Feature Used,"{""feature_name"": ""Dashboard"", ""$groups"": {""company"": ""account_001""}}",user_ph_002,2024-01-02 10:00:00
+posthog_evt_003,Button Clicked,"{""button_name"": ""Create Project"", ""$groups"": {""company"": ""account_002""}}",user_ph_003,2024-01-03 11:00:00
+posthog_evt_004,Feature Used,"{""feature_name"": ""Reports"", ""$groups"": {""company"": ""account_002""}}",user_ph_001,2024-01-04 14:00:00
+posthog_evt_005,$pageview,"{""$current_url"": ""https://app.example.com/dashboard"", ""$pathname"": ""/dashboard"", ""$referrer"": ""https://google.com"", ""$groups"": {""company"": ""account_001""}}",user_ph_001,2024-01-01 09:05:00
+posthog_evt_006,$pageview,"{""$current_url"": ""https://app.example.com/reports"", ""$pathname"": ""/reports"", ""$referrer"": ""https://app.example.com/dashboard"", ""$groups"": {""company"": ""account_002""}}",user_ph_003,2024-01-03 11:05:00
+posthog_evt_007,$identify,"{""$set"": {""email"": ""alice@acme.com""}}",user_ph_001,2024-01-01 08:50:00
+posthog_evt_008,Button Clicked,"{""button_name"": ""Invite Member"", ""$groups"": {""company"": ""account_001""}}",user_ph_002,2024-01-05 15:30:00
+posthog_evt_009,Feature Used,"{""feature_name"": ""Dashboard"", ""$groups"": {""company"": ""account_002""}}",user_ph_003,2024-01-06 09:00:00
+posthog_evt_010,$pageview,"{""$current_url"": ""https://app.example.com/settings"", ""$pathname"": ""/settings"", ""$referrer"": ""https://app.example.com/dashboard"", ""$groups"": {""company"": ""account_001""}}",user_ph_002,2024-01-02 10:05:00

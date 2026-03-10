@@ -4,7 +4,7 @@
 ) }}
 
 with tracks as (
-    select * from {{ ref('stg_segment_tracks') }}
+    select * from {{ ref('stg_tracks') }}
 ),
 
 date_spine as (

@@ -42,6 +42,15 @@ vars:
 
   # Table names follow standard Segment naming convention (tracks, pages, identifies, users, groups)
   # No need to override these - seed files are named to match production table names
+
+  # Tracking provider configuration
+  tracking_provider: "segment" # Options: 'segment', 'posthog'
+
+  # PostHog configuration (only used when tracking_provider = 'posthog')
+  posthog_group_type: "company" # Which PostHog group type represents the B2B Account
+  posthog_events_table: "events" # PostHog Batch Exports table name
+  # posthog_database: "YOUR_DATABASE"  # Defaults to target.database if not specified
+  # posthog_schema: "posthog_events"   # Override to match your PostHog dataset/schema
 models:
   growthcues_core:
     # Config for all models in the project

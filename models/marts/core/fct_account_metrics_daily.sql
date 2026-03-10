@@ -12,7 +12,7 @@ daily_activity_granularity as (
         account_id,
         user_id,
         event_name -- Crucial for Feature Breadth
-    from {{ ref('stg_segment_tracks') }}
+    from {{ ref('stg_tracks') }}
     group by 1, 2, 3, 4
 ),
 

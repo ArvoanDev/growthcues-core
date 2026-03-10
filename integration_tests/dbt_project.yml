@@ -27,6 +27,12 @@ vars:
   tracks_lookback_days: 30
   pages_lookback_days: 30
 
+  # PostHog configuration for integration tests (override with --vars when running PostHog tests)
+  # tracking_provider: "posthog"
+  posthog_schema: "growthcues_dataset" # Seeds land in the same schema as segment seeds
+  posthog_events_table: "posthog_events"
+  posthog_group_type: "company"
+
 seeds:
   growthcues_core_integration_tests:
     +quote_columns: false
@@ -55,6 +61,9 @@ seeds:
         created_at: timestamp
         received_at: timestamp
         sent_at: timestamp
+    posthog_events:
+      +column_types:
+        timestamp: timestamp
 
 models:
   growthcues_core:

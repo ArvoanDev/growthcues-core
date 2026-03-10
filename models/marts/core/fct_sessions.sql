@@ -11,7 +11,7 @@ WITH tracks AS (
         user_id,
         account_id,
         event_at as occurred_at
-    FROM {{ ref('stg_segment_tracks') }}
+    FROM {{ ref('stg_tracks') }}
     {% if is_incremental() %}
     WHERE event_at >= CAST((SELECT {{ dbt.dateadd('minute', -var('session_timeout_minutes', 30), 'MAX(session_end_at)') }} FROM {{ this }}) AS TIMESTAMP)
     {% endif %}
@@ -23,7 +23,7 @@ pages AS (
         user_id,
         account_id,
         page_viewed_at as occurred_at
-    FROM {{ ref('stg_segment_pages') }}
+    FROM {{ ref('stg_pages') }}
     {% if is_incremental() %}
     WHERE page_viewed_at >= CAST((SELECT {{ dbt.dateadd('minute', -var('session_timeout_minutes', 30), 'MAX(session_end_at)') }} FROM {{ this }}) AS TIMESTAMP)
     {% endif %}

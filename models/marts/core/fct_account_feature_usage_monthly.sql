@@ -6,7 +6,7 @@
 {%- set min_monthly_events = var('min_monthly_feature_events', 0) -%}
 
 with tracks as (
-    select * from {{ ref('stg_segment_tracks') }}
+    select * from {{ ref('stg_tracks') }}
 ),
 
 -- 1. Identify all feature usage per account per month

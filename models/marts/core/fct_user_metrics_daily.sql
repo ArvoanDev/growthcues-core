@@ -20,7 +20,7 @@ daily_activity as (
         user_id,
         count(*) as n_events,
         count(distinct event_name) as n_features
-    from {{ ref('stg_segment_tracks') }}
+    from {{ ref('stg_tracks') }}
     where user_id is not null
     group by 1, 2
 ),

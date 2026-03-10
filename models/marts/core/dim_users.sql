@@ -9,7 +9,7 @@ with user_activity as (
         min(event_at) as first_seen_at,
         max(event_at) as last_seen_at,
         count(distinct account_id) as lifetime_accounts_distinct
-    from {{ ref('stg_segment_tracks') }}
+    from {{ ref('stg_tracks') }}
     where user_id is not null
     group by 1
 ),
@@ -18,7 +18,7 @@ last_account as (
     select 
         user_id, 
         account_id as latest_account_id
-    from {{ ref('stg_segment_tracks') }}
+    from {{ ref('stg_tracks') }}
     where user_id is not null and account_id is not null
     -- Qualify selects the first row of the window function (Snowflake/BigQuery supported)
     qualify row_number() over (partition by user_id order by event_at desc) = 1

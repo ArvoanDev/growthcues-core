@@ -22,3 +22,16 @@ sources:
       - name: groups
         identifier: "{{ var('segment_groups_table', 'groups') }}"
         description: Raw group (account) identify calls.
+
+  - name: posthog
+    # Database and schema are configurable via dbt_project.yml variables.
+    # Only used when var('tracking_provider') = 'posthog'.
+    database: "{{ var('posthog_database', target.database) }}"
+    schema: "{{ var('posthog_schema', 'posthog_events') }}"
+    tables:
+      - name: events
+        identifier: "{{ var('posthog_events_table', 'events') }}"
+        description: >
+          Raw events exported via PostHog Batch Exports. Contains all event types
+          (track, pageview, identify) in a single table with a nested JSON
+          properties blob.

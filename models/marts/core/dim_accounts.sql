@@ -17,7 +17,7 @@ with account_activity as (
             when cast(event_at as date) >= {{ dbt.dateadd('day', -30, dbt.current_timestamp()) }}
             then user_id 
         end) as current_active_seats
-    from {{ ref('stg_segment_tracks') }}
+    from {{ ref('stg_tracks') }}
     where account_id is not null
     group by 1
 )
